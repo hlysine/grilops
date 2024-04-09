@@ -6,6 +6,9 @@
   "main": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "module": "dist/index.es.js",
+  "engines": {
+    "node": ">=20.12.1"
+  },
   "exports": {
     ".": {
       "import": "./dist/index.es.js",

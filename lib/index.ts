@@ -8,5 +8,5 @@ export async function z3Solve() {
 
   const solver = new Solver();
   solver.add(And(x.ge(0), x.le(9)));
-  console.log(await solver.check());
+  return await solver.check();
 }

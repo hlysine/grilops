@@ -33,6 +33,14 @@ module.exports = {
       'error',
       { checksVoidReturn: false },
     ],
+    '@typescript-eslint/restrict-template-expressions': [
+      'error',
+      {
+        allowNumber: true,
+        allowBoolean: true,
+        allowNullish: true,
+      },
+    ],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -45,7 +53,7 @@ module.exports = {
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': [
       'error',
-      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      { args: 'none', argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
     ],
     '@typescript-eslint/consistent-type-definitions': 'off',
     '@typescript-eslint/unified-signatures': 'off',

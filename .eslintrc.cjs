@@ -28,6 +28,11 @@ module.exports = {
   ],
   rules: {
     'prettier/prettier': 'error',
+    camelcase: 'off',
+    '@typescript-eslint/no-misused-promises': [
+      'error',
+      { checksVoidReturn: false },
+    ],
     '@typescript-eslint/explicit-function-return-type': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     '@typescript-eslint/no-unnecessary-condition': 'off',

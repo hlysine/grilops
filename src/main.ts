@@ -13,6 +13,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `;
 
-document.querySelector<HTMLButtonElement>('#execute')!.addEventListener('click', async () => {
-  document.querySelector<HTMLPreElement>('#result')!.textContent = JSON.stringify(await z3Solve());
-});
+document
+  .querySelector<HTMLButtonElement>('#execute')!
+  .addEventListener('click', async () => {
+    document.querySelector<HTMLPreElement>('#result')!.textContent =
+      JSON.stringify(await z3Solve());
+  });

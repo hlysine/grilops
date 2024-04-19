@@ -3,6 +3,8 @@
 import { Arith } from 'z3-solver';
 import { zip } from './utils';
 
+export type VectorString = `V(${string},${string})`;
+
 /**
  * A vector representing an offset in two dimensions.
  */
@@ -35,8 +37,8 @@ export class Vector {
     return new Vector(this.dy + other.dy, this.dx + other.dx);
   }
 
-  public toString() {
-    return `(${this.dy}, ${this.dx})`;
+  public toString(): VectorString {
+    return `V(${this.dy},${this.dx})`;
   }
 }
 
@@ -60,6 +62,8 @@ export class Direction {
     this.vector = vector;
   }
 }
+
+export type PointString = `P(${string},${string})`;
 
 /**
  * A point, generally corresponding to the center of a grid cell.
@@ -89,8 +93,8 @@ export class Point {
     return new Point(this.y + other.dy, this.x + other.dx);
   }
 
-  public toString() {
-    return `(${this.y}, ${this.x})`;
+  public toString(): PointString {
+    return `P(${this.y},${this.x})`;
   }
 }
 
@@ -124,7 +128,7 @@ export class Neighbor<Name extends string> {
  * A base class for defining the structure of a grid.
  */
 export class Lattice {
-  private _vectorDirection: Map<string, Direction>;
+  private _vectorDirection: Map<VectorString, Direction>;
 
   public constructor() {
     this._vectorDirection = new Map();
@@ -213,7 +217,7 @@ export class Lattice {
    * given directions from the given cell.
    */
   private static _getNeighbors<Name extends string>(
-    cellMap: Map<string, Arith<Name>>,
+    cellMap: Map<PointString, Arith<Name>>,
     p: Point,
     directions: Direction[]
   ): Neighbor<Name>[] {
@@ -236,7 +240,7 @@ export class Lattice {
    * edge with the given cell.
    */
   public edgeSharingNeighbors<Name extends string>(
-    cellMap: Map<string, Arith<Name>>,
+    cellMap: Map<PointString, Arith<Name>>,
     p: Point
   ): Neighbor<Name>[] {
     return Lattice._getNeighbors(cellMap, p, this.edgeSharingDirections());
@@ -250,7 +254,7 @@ export class Lattice {
    * vertex with the given cell.
    */
   public vertexSharingNeighbors<Name extends string>(
-    cellMap: Map<string, Arith<Name>>,
+    cellMap: Map<PointString, Arith<Name>>,
     p: Point
   ): Neighbor<Name>[] {
     return Lattice._getNeighbors(cellMap, p, this.vertexSharingDirections());

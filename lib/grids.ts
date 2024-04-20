@@ -97,6 +97,15 @@ export class SymbolGrid<Name extends string> {
   }
 
   /**
+   * Returns the cell at the given point.
+   * @param p The location of the cell.
+   * @returns The cell at the given point.
+   */
+  public cellAt(p: Point) {
+    return this._grid.get(p.toString())!;
+  }
+
+  /**
    * Returns an expression for whether this cell contains this value.
    * @param p The location of the given cell.
    * @param value The value to satisfy the expression.

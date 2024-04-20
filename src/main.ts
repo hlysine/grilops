@@ -53,11 +53,11 @@ document
       RectangularLattice.EDGE_DIRECTIONS.E,
       c =>
         ctx.If(
-          c.eq(grid.grid.get(new Point(0, 0).toString())!),
+          c.eq(grid.cellAt(new Point(0, 0))),
           ctx.Int.val(1),
           ctx.Int.val(0)
         ),
-      c => c.neq(grid.grid.get(new Point(0, 0).toString())!)
+      c => c.neq(grid.cellAt(new Point(0, 0)))
     );
     grid.solver.add(count.eq(ctx.Int.val(3)));
 

@@ -1,3 +1,7 @@
+/**
+ * @module utils Utility functions and types specific to this Typescript port.
+ */
+
 import { Context, Z3LowLevel } from 'z3-solver';
 
 export interface GrilopsContext<Name extends string> {
@@ -10,6 +14,9 @@ export type Constructor<T extends abstract new (...args: any) => any> = new (
   ...args: ConstructorParameters<T>
 ) => T;
 
+export function zip<T1, T2>(a: T1[], b: T2[]): [T1, T2][];
+export function zip<T1, T2, T3>(a: T1[], b: T2[], c: T3[]): [T1, T2, T3][];
+export function zip<T>(...args: T[][]): T[][];
 export function zip<T>(...args: T[][]): T[][] {
   const min = Math.min(...args.map(a => a.length));
   return Array.from({ length: min }, (_, i) => args.map(a => a[i]));

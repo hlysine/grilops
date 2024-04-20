@@ -1,4 +1,6 @@
-// This module supports constructing and working with grids of cells.
+/**
+ * @module grids This module supports constructing and working with grids of cells.
+ */
 
 import { Arith, Bool, Solver } from 'z3-solver';
 import { Lattice, Neighbor, Point, PointString } from './geometry';

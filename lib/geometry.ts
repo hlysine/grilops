@@ -1,4 +1,6 @@
-// This module supports geometric objects useful in modeling grids of cells.
+/**
+ * @module geometry This module supports geometric objects useful in modeling grids of cells.
+ */
 
 import { Arith } from 'z3-solver';
 import { zip } from './utils/utils';

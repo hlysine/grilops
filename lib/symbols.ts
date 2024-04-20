@@ -1,4 +1,6 @@
-// This module supports defining symbols that may be filled into grid cells.
+/**
+ * @module symbols This module supports defining symbols that may be filled into grid cells.
+ */
 
 /**
  * A marking that may be filled into a `grilops.grids.SymbolGrid` cell.

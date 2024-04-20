@@ -1,4 +1,6 @@
-// Optimizations for constructing z3 expressions that skip safety checks.
+/**
+ * @module fastZ3 Optimizations for constructing z3 expressions that skip safety checks.
+ */
 
 import { Bool, Expr } from 'z3-solver';
 import { GrilopsContext } from './utils';

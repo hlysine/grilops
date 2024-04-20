@@ -1,3 +1,7 @@
+/**
+ * @module quadTree Quadtree data structures for working with areas of points.
+ */
+
 import { Bool } from 'z3-solver';
 import { Point } from '../geometry';
 import { GrilopsContext } from './utils';

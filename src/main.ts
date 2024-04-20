@@ -17,8 +17,11 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 document
   .querySelector<HTMLButtonElement>('#execute')!
   .addEventListener('click', async () => {
+    // initialize z3
     const { Z3, Context } = await init();
     const ctx = Context('main');
+
+    // initialize grilops
     const {
       SymbolSet,
       getRectangleLattice,
@@ -31,6 +34,8 @@ document
       context: ctx,
     });
 
+    // here, a symbol set refers to all possible values that a cell can take
+    // while a lattice refers to the shape of the grid
     const symbolSet = new SymbolSet([
       ['EMPTY', '.'],
       ['DARK', '#'],
@@ -39,8 +44,12 @@ document
     const lattice = getRectangleLattice(10, 10);
 
     // You can use a solver or an optimizer here
+    // a solver is adequate most of the time, and it has better performance
+    // this is just a demo of how the optimizer can be used
     const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
 
+    // just for demo purposes
+    // add some arbitrary sightline constraints
     for (let i = 0; i < 8; i++) {
       const cell = grid.cellAt(new Point(i, 0));
       grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
@@ -54,6 +63,8 @@ document
       grid.solver.add(count.eq(ctx.Int.val(i + 1)));
     }
 
+    // for demo purposes
+    // optimize for the fewest number of filled cells
     grid.solver.minimize(
       ctx.Sum(
         ctx.Int.val(0),
@@ -63,6 +74,8 @@ document
       )
     );
 
+    // run the solver by calling the solve method
+    // the solution can be found in grid.solver.model if it exists
     let result = '';
     console.time('solve');
     const solution = await grid.solve();
@@ -72,10 +85,13 @@ document
     if (solution) {
       result += grid.toString();
       result += '\n\n';
+
+      // isUnique runs the solver again while excluding the current solution
+      // grid.solver.model will be updated with the new solution if it exists
       const unique = await grid.isUnique();
       result += unique ? 'unique' : 'not unique';
       result += '\n\n';
-      result += grid.toString();
+      if (!unique) result += grid.toString();
     }
     document.querySelector<HTMLPreElement>('#result')!.textContent = result;
   });

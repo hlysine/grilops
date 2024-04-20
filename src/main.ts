@@ -19,11 +19,17 @@ document
   .addEventListener('click', async () => {
     const { Z3, Context } = await init();
     const ctx = Context('main');
-    const { SymbolSet, getRectangleLattice, SymbolGrid, Point, countCells } =
-      grilops({
-        lowLevel: Z3,
-        context: ctx,
-      });
+    const {
+      SymbolSet,
+      getRectangleLattice,
+      SymbolGrid,
+      Point,
+      countCells,
+      RectangularLattice,
+    } = grilops({
+      lowLevel: Z3,
+      context: ctx,
+    });
 
     const symbolSet = new SymbolSet([
       ['DARK', '#'],
@@ -44,7 +50,7 @@ document
     const count = countCells(
       grid,
       new Point(0, 0),
-      lattice.edgeSharingDirections()[1],
+      RectangularLattice.EDGE_DIRECTIONS.E,
       c =>
         ctx.If(c.eq(symbolSet.indices.LIGHT), ctx.Int.val(1), ctx.Int.val(0)),
       c => c.eq(symbolSet.indices.DARK)

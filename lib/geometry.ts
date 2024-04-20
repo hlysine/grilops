@@ -399,6 +399,21 @@ export class RectangularLattice extends Lattice {
   private _points: Point[];
   private _pointIndices: Map<PointString, number>;
 
+  public static EDGE_DIRECTIONS = {
+    N: new Direction('N', new Vector(-1, 0)),
+    S: new Direction('S', new Vector(1, 0)),
+    E: new Direction('E', new Vector(0, 1)),
+    W: new Direction('W', new Vector(0, -1)),
+  };
+
+  public static VERTEX_DIRECTIONS = {
+    ...this.EDGE_DIRECTIONS,
+    NE: new Direction('NE', new Vector(-1, 1)),
+    NW: new Direction('NW', new Vector(-1, -1)),
+    SE: new Direction('SE', new Vector(1, 1)),
+    SW: new Direction('SW', new Vector(1, -1)),
+  };
+
   /**
    * @param points A set of points corresponding to a rectangular lattice.
    * Note that these points need not fill a complete rectangle.
@@ -421,22 +436,11 @@ export class RectangularLattice extends Lattice {
   }
 
   public edgeSharingDirections(): Direction[] {
-    return [
-      new Direction('N', new Vector(-1, 0)),
-      new Direction('S', new Vector(1, 0)),
-      new Direction('E', new Vector(0, 1)),
-      new Direction('W', new Vector(0, -1)),
-    ];
+    return Object.values(RectangularLattice.EDGE_DIRECTIONS);
   }
 
   public vertexSharingDirections(): Direction[] {
-    return [
-      ...this.edgeSharingDirections(),
-      new Direction('NE', new Vector(-1, 1)),
-      new Direction('NW', new Vector(-1, -1)),
-      new Direction('SE', new Vector(1, 1)),
-      new Direction('SW', new Vector(1, -1)),
-    ];
+    return Object.values(RectangularLattice.VERTEX_DIRECTIONS);
   }
 
   public labelForDirection(direction: Direction): string {
@@ -607,15 +611,17 @@ export abstract class HexagonalLattice extends Lattice {
  * adjacent have their y coordinates differ by 2.
  */
 export class FlatToppedHexagonalLattice extends HexagonalLattice {
+  public static DIRECTIONS = {
+    N: new Direction('N', new Vector(-2, 0)),
+    S: new Direction('S', new Vector(2, 0)),
+    NE: new Direction('NE', new Vector(-1, 1)),
+    NW: new Direction('NW', new Vector(-1, -1)),
+    SE: new Direction('SE', new Vector(1, 1)),
+    SW: new Direction('SW', new Vector(1, -1)),
+  };
+
   public edgeSharingDirections(): Direction[] {
-    return [
-      new Direction('N', new Vector(-2, 0)),
-      new Direction('S', new Vector(2, 0)),
-      new Direction('NE', new Vector(-1, 1)),
-      new Direction('NW', new Vector(-1, -1)),
-      new Direction('SE', new Vector(1, 1)),
-      new Direction('SW', new Vector(1, -1)),
-    ];
+    return Object.values(FlatToppedHexagonalLattice.DIRECTIONS);
   }
 
   public transformationFunctions(
@@ -684,15 +690,17 @@ export class FlatToppedHexagonalLattice extends HexagonalLattice {
  * adjacent have their x coordinates differ by 2.
  */
 export class PointyToppedHexagonalLattice extends HexagonalLattice {
+  public static DIRECTIONS = {
+    E: new Direction('E', new Vector(0, 2)),
+    W: new Direction('W', new Vector(0, -2)),
+    NE: new Direction('NE', new Vector(-1, 1)),
+    NW: new Direction('NW', new Vector(-1, -1)),
+    SE: new Direction('SE', new Vector(1, 1)),
+    SW: new Direction('SW', new Vector(1, -1)),
+  };
+
   public edgeSharingDirections(): Direction[] {
-    return [
-      new Direction('E', new Vector(0, 2)),
-      new Direction('W', new Vector(0, -2)),
-      new Direction('NE', new Vector(-1, 1)),
-      new Direction('NW', new Vector(-1, -1)),
-      new Direction('SE', new Vector(1, 1)),
-      new Direction('SW', new Vector(1, -1)),
-    ];
+    return Object.values(PointyToppedHexagonalLattice.DIRECTIONS);
   }
 
   public transformationFunctions(

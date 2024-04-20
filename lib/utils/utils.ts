@@ -5,7 +5,7 @@
 import { Context, Z3LowLevel } from 'z3-solver';
 
 export interface GrilopsContext<Name extends string> {
-  lowLevel: Z3LowLevel['Z3'];
+  z3: Z3LowLevel['Z3'];
   context: Context<Name>;
 }
 

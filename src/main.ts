@@ -27,7 +27,7 @@ document
       countCells,
       RectangularLattice,
     } = grilops({
-      lowLevel: Z3,
+      z3: Z3,
       context: ctx,
     });
 

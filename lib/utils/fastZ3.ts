@@ -13,7 +13,7 @@ export function fastAnd<Name extends string>(
   ...args: Bool<Name>[]
 ) {
   return context.context.Bool.ptr(
-    context.lowLevel.mk_and(
+    context.z3.mk_and(
       context.context.ptr,
       args.map(a => a.ast)
     )
@@ -29,7 +29,7 @@ export function fastEq<Name extends string>(
   b: Expr<Name>
 ) {
   return context.context.Bool.ptr(
-    context.lowLevel.mk_eq(context.context.ptr, a.ast, b.ast)
+    context.z3.mk_eq(context.context.ptr, a.ast, b.ast)
   );
 }
 
@@ -41,7 +41,7 @@ export function fastNe<Name extends string>(
   ...args: Expr<Name>[]
 ) {
   return context.context.Bool.ptr(
-    context.lowLevel.mk_distinct(
+    context.z3.mk_distinct(
       context.context.ptr,
       args.map(a => a.ast)
     )

@@ -36,10 +36,10 @@ document
       ['LIGHT', '*'],
       ['EMPTY', '.'],
     ]);
-    const lattice = getRectangleLattice(10, 10);
+    const lattice = getRectangleLattice(1, 10);
     const grid = new SymbolGrid(lattice, symbolSet);
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 1; i++) {
       for (let j = 0; j < 10; j++) {
         grid.solver.add(
           ctx.Not(grid.cellIs(new Point(i, j), symbolSet.indices.EMPTY))
@@ -52,8 +52,12 @@ document
       new Point(0, 0),
       RectangularLattice.EDGE_DIRECTIONS.E,
       c =>
-        ctx.If(c.eq(symbolSet.indices.LIGHT), ctx.Int.val(1), ctx.Int.val(0)),
-      c => c.eq(symbolSet.indices.DARK)
+        ctx.If(
+          c.eq(grid.grid.get(new Point(0, 0).toString())!),
+          ctx.Int.val(1),
+          ctx.Int.val(0)
+        ),
+      c => c.neq(grid.grid.get(new Point(0, 0).toString())!)
     );
     grid.solver.add(count.eq(ctx.Int.val(3)));
 

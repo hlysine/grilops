@@ -1,7 +1,7 @@
 // This module supports geometric objects useful in modeling grids of cells.
 
 import { Arith } from 'z3-solver';
-import { zip } from './utils';
+import { zip } from './utils/utils';
 
 export type VectorString = `V(${string},${string})`;
 

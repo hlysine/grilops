@@ -1,5 +1,5 @@
 import { Bool } from 'z3-solver';
-import { Point } from './geometry';
+import { Point } from '../geometry';
 import { GrilopsContext } from './utils';
 import { fastAnd } from './fastZ3';
 

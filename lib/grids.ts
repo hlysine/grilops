@@ -3,7 +3,7 @@
 import { Arith, Bool, Solver } from 'z3-solver';
 import { Lattice, Neighbor, Point, PointString } from './geometry';
 import { SymbolSet } from './symbols';
-import { GrilopsContext } from './utils';
+import { GrilopsContext } from './utils/utils';
 
 /**
  * A grid of cells that can be solved to contain specific symbols.

@@ -168,7 +168,9 @@ export class SymbolGrid<Name extends string> {
    * and the symbol index for that cell (`number`). It may return a string to
    * print for that cell, or None to keep the default behavior.
    */
-  public toString(hookFunction: ((p: Point, i: number) => string) | undefined) {
+  public toString(
+    hookFunction?: ((p: Point, i: number) => string) | undefined
+  ) {
     const model = this._solver.model();
     const labelWidth = Math.max(
       ...[...this.symbolSet.symbols.values()].map(s => s.label.length)
@@ -204,7 +206,7 @@ export default function grids<Name extends string>(
     /**
      * A grid of cells that can be solved to contain specific symbols.
      */
-    SymbolGrid(
+    SymbolGrid: function (
       lattice: Lattice,
       symbolSet: SymbolSet,
       solver: Solver<Name> | undefined = undefined

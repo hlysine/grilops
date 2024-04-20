@@ -353,9 +353,11 @@ export abstract class Lattice {
       output = output ?? blank;
       columns.push(output.split('\n'));
     }
-    return zip(...columns)
-      .map(row => row.join(''))
-      .join('\n');
+    return (
+      zip(...columns)
+        .map(row => row.join(''))
+        .join('\n') + '\n'
+    );
   }
 
   /**

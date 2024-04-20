@@ -196,7 +196,7 @@ export default function quadTree<Name extends string>(
      * provides the ability to lazily construct and cache z3 expressions that
      * reference these points.
      */
-    ExpressionQuadTree<ExprKey extends string | number | symbol>(
+    ExpressionQuadTree: function <ExprKey extends string | number | symbol>(
       points: Point[],
       exprFuncs?: ExprFuncMap<Name, ExprKey>
     ) {

@@ -1,4 +1,5 @@
-import { z3Solve } from '../lib/index.ts';
+import { init } from 'z3-solver';
+import { grilops } from '../lib';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -16,6 +17,51 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 document
   .querySelector<HTMLButtonElement>('#execute')!
   .addEventListener('click', async () => {
-    document.querySelector<HTMLPreElement>('#result')!.textContent =
-      JSON.stringify(await z3Solve());
+    const { Z3, Context } = await init();
+    const ctx = Context('main');
+    const { SymbolSet, getRectangleLattice, SymbolGrid, Point, countCells } =
+      grilops({
+        lowLevel: Z3,
+        context: ctx,
+      });
+
+    const symbolSet = new SymbolSet([
+      ['DARK', '#'],
+      ['LIGHT', '*'],
+      ['EMPTY', '.'],
+    ]);
+    const lattice = getRectangleLattice(10, 10);
+    const grid = new SymbolGrid(lattice, symbolSet);
+
+    for (let i = 0; i < 10; i++) {
+      for (let j = 0; j < 10; j++) {
+        grid.solver.add(
+          ctx.Not(grid.cellIs(new Point(i, j), symbolSet.indices.EMPTY))
+        );
+      }
+    }
+
+    const count = countCells(
+      grid,
+      new Point(0, 0),
+      lattice.edgeSharingDirections()[1],
+      c =>
+        ctx.If(c.eq(symbolSet.indices.LIGHT), ctx.Int.val(1), ctx.Int.val(0)),
+      c => c.eq(symbolSet.indices.DARK)
+    );
+    grid.solver.add(count.eq(ctx.Int.val(3)));
+
+    let result = '';
+    const solution = await grid.solve();
+    result += solution ? 'sat' : 'unsat';
+    result += '\n\n';
+    result += grid.toString();
+    result += '\n\n';
+    if (solution) {
+      const unique = await grid.isUnique();
+      result += unique ? 'unique' : 'not unique';
+      result += '\n\n';
+      result += grid.toString();
+    }
+    document.querySelector<HTMLPreElement>('#result')!.textContent = result;
   });

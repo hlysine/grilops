@@ -34,40 +34,35 @@ document
     const symbolSet = new SymbolSet([
       ['DARK', '#'],
       ['LIGHT', '*'],
-      ['EMPTY', '.'],
     ]);
-    const lattice = getRectangleLattice(1, 10);
-    const grid = new SymbolGrid(lattice, symbolSet);
+    const lattice = getRectangleLattice(10, 10);
+    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_LIA'));
 
-    for (let i = 0; i < 1; i++) {
-      for (let j = 0; j < 10; j++) {
-        grid.solver.add(
-          ctx.Not(grid.cellIs(new Point(i, j), symbolSet.indices.EMPTY))
-        );
-      }
+    for (let i = 0; i < 8; i++) {
+      const count = countCells(
+        grid,
+        new Point(i, 0),
+        RectangularLattice.EDGE_DIRECTIONS.E,
+        c =>
+          ctx.If(
+            c.eq(grid.cellAt(new Point(i, 0))),
+            ctx.Int.val(1),
+            ctx.Int.val(0)
+          ),
+        c => c.neq(grid.cellAt(new Point(i, 0)))
+      );
+      grid.solver.add(count.eq(ctx.Int.val(i + 1)));
     }
 
-    const count = countCells(
-      grid,
-      new Point(0, 0),
-      RectangularLattice.EDGE_DIRECTIONS.E,
-      c =>
-        ctx.If(
-          c.eq(grid.cellAt(new Point(0, 0))),
-          ctx.Int.val(1),
-          ctx.Int.val(0)
-        ),
-      c => c.neq(grid.cellAt(new Point(0, 0)))
-    );
-    grid.solver.add(count.eq(ctx.Int.val(3)));
-
     let result = '';
+    console.time('solve');
     const solution = await grid.solve();
+    console.timeEnd('solve');
     result += solution ? 'sat' : 'unsat';
     result += '\n\n';
-    result += grid.toString();
-    result += '\n\n';
     if (solution) {
+      result += grid.toString();
+      result += '\n\n';
       const unique = await grid.isUnique();
       result += unique ? 'unique' : 'not unique';
       result += '\n\n';

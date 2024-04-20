@@ -32,27 +32,36 @@ document
     });
 
     const symbolSet = new SymbolSet([
+      ['EMPTY', '.'],
       ['DARK', '#'],
       ['LIGHT', '*'],
     ]);
     const lattice = getRectangleLattice(10, 10);
-    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_LIA'));
+
+    // You can use a solver or an optimizer here
+    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
 
     for (let i = 0; i < 8; i++) {
+      const cell = grid.cellAt(new Point(i, 0));
+      grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
       const count = countCells(
         grid,
         new Point(i, 0),
         RectangularLattice.EDGE_DIRECTIONS.E,
-        c =>
-          ctx.If(
-            c.eq(grid.cellAt(new Point(i, 0))),
-            ctx.Int.val(1),
-            ctx.Int.val(0)
-          ),
-        c => c.neq(grid.cellAt(new Point(i, 0)))
+        c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
+        c => c.neq(cell)
       );
       grid.solver.add(count.eq(ctx.Int.val(i + 1)));
     }
+
+    grid.solver.minimize(
+      ctx.Sum(
+        ctx.Int.val(0),
+        ...[...grid.grid.values()].map(c =>
+          ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
+        )
+      )
+    );
 
     let result = '';
     console.time('solve');

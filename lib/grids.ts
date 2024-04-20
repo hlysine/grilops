@@ -2,7 +2,7 @@
  * @module grids This module supports constructing and working with grids of cells.
  */
 
-import { Arith, Bool, Solver } from 'z3-solver';
+import { Arith, Bool, Optimize, Solver } from 'z3-solver';
 import { Lattice, Neighbor, Point, PointString } from './geometry';
 import { SymbolSet } from './symbols';
 import { GrilopsContext } from './utils/utils';
@@ -10,13 +10,18 @@ import { GrilopsContext } from './utils/utils';
 /**
  * A grid of cells that can be solved to contain specific symbols.
  */
-export class SymbolGrid<Name extends string> {
+export class SymbolGrid<
+  Name extends string,
+  const Core extends Solver<Name> | Optimize<Name> =
+    | Solver<Name>
+    | Optimize<Name>,
+> {
   private static _instanceIndex = 0;
 
   private readonly _ctx: GrilopsContext<Name>;
   private _lattice: Lattice;
   private _symbolSet: SymbolSet;
-  private _solver: Solver<Name>;
+  private _solver: Core;
   private _grid: Map<PointString, Arith<Name>>;
 
   /**
@@ -29,12 +34,12 @@ export class SymbolGrid<Name extends string> {
     context: GrilopsContext<Name>,
     lattice: Lattice,
     symbolSet: SymbolSet,
-    solver: Solver<Name> | undefined = undefined
+    solver: Core | undefined = undefined
   ) {
     this._ctx = context;
     this._lattice = lattice;
     this._symbolSet = symbolSet;
-    this._solver = solver ?? new this._ctx.context.Solver();
+    this._solver = solver ?? (new this._ctx.context.Solver() as Core);
     this._grid = new Map();
     for (const p of lattice.points) {
       const v = this._ctx.context.Int.const(
@@ -205,20 +210,22 @@ export class SymbolGrid<Name extends string> {
 export default function grids<Name extends string>(
   context: GrilopsContext<Name>
 ): {
-  SymbolGrid: new (
+  SymbolGrid: new <Core extends Solver<Name> | Optimize<Name> = Solver<Name>>(
     lattice: Lattice,
     symbolSet: SymbolSet,
-    solver?: Solver<Name>
-  ) => SymbolGrid<Name>;
+    solver?: Core | undefined
+  ) => SymbolGrid<Name, Core>;
 } {
   return {
     /**
      * A grid of cells that can be solved to contain specific symbols.
      */
-    SymbolGrid: function (
+    SymbolGrid: function <
+      Core extends Solver<Name> | Optimize<Name> = Solver<Name>,
+    >(
       lattice: Lattice,
       symbolSet: SymbolSet,
-      solver: Solver<Name> | undefined = undefined
+      solver: Core | undefined = undefined
     ) {
       return new SymbolGrid(context, lattice, symbolSet, solver);
     },

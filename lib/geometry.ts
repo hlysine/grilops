@@ -97,6 +97,10 @@ export class Point {
     return `P(${this.y},${this.x})`;
   }
 
+  public equals(other: Point): boolean {
+    return this.y === other.y && this.x === other.x;
+  }
+
   public static comparator(a: Point, b: Point): number {
     if (a.y < b.y) {
       return -1;

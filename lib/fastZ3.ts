@@ -4,17 +4,17 @@ import { Bool, Expr } from 'z3-solver';
 import { GrilopsContext } from './utils';
 
 export default function fastZ3<Name extends string>({
-  Context,
-  Z3,
+  context,
+  lowLevel,
 }: GrilopsContext<Name>) {
   return {
     /**
      * Equivalent of z3 And.
      */
     fastAnd(...args: Bool<Name>[]) {
-      return Context.Bool.ptr(
-        Z3.mk_and(
-          Context.ptr,
+      return context.Bool.ptr(
+        lowLevel.mk_and(
+          context.ptr,
           args.map(a => a.ast)
         )
       );
@@ -23,15 +23,15 @@ export default function fastZ3<Name extends string>({
      * Equivalent of z3 Eq.
      */
     fastEq(a: Expr<Name>, b: Expr<Name>) {
-      return Context.Bool.ptr(Z3.mk_eq(Context.ptr, a.ast, b.ast));
+      return context.Bool.ptr(lowLevel.mk_eq(context.ptr, a.ast, b.ast));
     },
     /**
      * Equivalent of z3 Ne.
      */
     fastNe(...args: Expr<Name>[]) {
-      return Context.Bool.ptr(
-        Z3.mk_distinct(
-          Context.ptr,
+      return context.Bool.ptr(
+        lowLevel.mk_distinct(
+          context.ptr,
           args.map(a => a.ast)
         )
       );

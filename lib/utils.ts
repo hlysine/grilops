@@ -1,7 +1,9 @@
-import { Context, Z3HighLevel, Z3LowLevel } from 'z3-solver';
+import { Context, Z3LowLevel } from 'z3-solver';
 
-export type GrilopsContext<Name extends string> = Z3LowLevel &
-  Omit<Z3HighLevel, 'Context'> & { Context: Context<Name> };
+export interface GrilopsContext<Name extends string> {
+  lowLevel: Z3LowLevel['Z3'];
+  context: Context<Name>;
+}
 
 export function zip<T>(...args: T[][]): T[][] {
   const min = Math.min(...args.map(a => a.length));

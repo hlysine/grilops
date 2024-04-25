@@ -42,6 +42,24 @@ export class Vector {
   public toString(): VectorString {
     return `V(${this.dy},${this.dx})`;
   }
+
+  public equals(other: Vector): boolean {
+    return this.dy === other.dy && this.dx === other.dx;
+  }
+
+  public static comparator(a: Vector, b: Vector): number {
+    if (a.dy < b.dy) {
+      return -1;
+    } else if (a.dy > b.dy) {
+      return 1;
+    } else if (a.dx < b.dx) {
+      return -1;
+    } else if (a.dx > b.dx) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
 }
 
 export type DirectionString = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
@@ -97,6 +115,14 @@ export class Point {
 
   public toString(): PointString {
     return `P(${this.y},${this.x})`;
+  }
+
+  public static fromString(s: PointString): Point {
+    const match = s.match(/^P\((\d+),(\d+)\)$/);
+    if (match === null) {
+      throw new Error(`Invalid PointString: ${s}`);
+    }
+    return new Point(parseInt(match[1]), parseInt(match[2]));
   }
 
   public equals(other: Point): boolean {

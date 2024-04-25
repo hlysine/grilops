@@ -29,6 +29,9 @@ document
       Point,
       countCells,
       RectangularLattice,
+      ShapeConstrainer,
+      Shape,
+      Vector,
     } = grilops({
       z3: Z3,
       context: ctx,
@@ -48,8 +51,9 @@ document
     // this is just a demo of how the optimizer can be used
     const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
 
-    // just for demo purposes
-    // add some arbitrary sightline constraints
+    // DEMO CONSTRAINTS
+
+    // add some sightline constraints
     for (let i = 0; i < 8; i++) {
       const cell = grid.cellAt(new Point(i, 0));
       grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
@@ -63,7 +67,32 @@ document
       grid.solver.add(count.eq(ctx.Int.val(i + 1)));
     }
 
-    // for demo purposes
+    // add some shape constraints
+    const sc = new ShapeConstrainer(
+      lattice,
+      [
+        new Shape([
+          new Vector(0, 0),
+          new Vector(0, 1),
+          new Vector(1, 0),
+          new Vector(1, 1),
+        ]),
+      ],
+      grid.solver,
+      false,
+      true,
+      true,
+      true
+    );
+    lattice.points.forEach(p =>
+      grid.solver.add(
+        grid
+          .cellAt(p)
+          .neq(symbolSet.indices.DARK)
+          .implies(sc.getShapeTypeAt(p).eq(-1))
+      )
+    );
+
     // optimize for the fewest number of filled cells
     grid.solver.minimize(
       ctx.Sum(
@@ -85,13 +114,20 @@ document
     if (solution) {
       result += grid.toString();
       result += '\n\n';
+      result += sc.shapeTypesToString();
+      result += '\n\n';
 
       // isUnique runs the solver again while excluding the current solution
       // grid.solver.model will be updated with the new solution if it exists
       const unique = await grid.isUnique();
       result += unique ? 'unique' : 'not unique';
       result += '\n\n';
-      if (!unique) result += grid.toString();
+      if (!unique) {
+        result += grid.toString();
+        result += '\n\n';
+        result += sc.shapeTypesToString();
+        result += '\n\n';
+      }
     }
     document.querySelector<HTMLPreElement>('#result')!.textContent = result;
   });

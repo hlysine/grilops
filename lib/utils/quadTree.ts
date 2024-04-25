@@ -5,7 +5,6 @@
 import { Bool } from 'z3-solver';
 import { Point } from '../geometry';
 import { GrilopsContext } from './utils';
-import { fastAnd } from './fastZ3';
 
 export type ExprFuncMap<Name extends string, ExprKey> = Map<
   ExprKey,
@@ -168,12 +167,12 @@ export class ExpressionQuadTree<
       const terms = this._quads
         .map(q => q.getOtherPointsExpr(key, coveredPoints))
         .filter(Boolean) as Bool<Name>[];
-      return fastAnd(this._ctx, ...terms);
+      return this._ctx.context.And(...terms);
     }
 
     let expr = this._exprs.get(key);
     if (!expr) {
-      expr = fastAnd(this._ctx, ...this.getExprs(key));
+      expr = this._ctx.context.And(...this.getExprs(key));
       this._exprs.set(key, expr);
     }
     return expr;

@@ -114,7 +114,10 @@ document
     if (solution) {
       result += grid.toString();
       result += '\n\n';
-      result += sc.shapeTypesToString();
+      result += sc
+        .shapeTypesToString()
+        .replace(/ {2}(.)/g, '$1')
+        .replace(/ /g, '.');
       result += '\n\n';
 
       // isUnique runs the solver again while excluding the current solution
@@ -125,7 +128,10 @@ document
       if (!unique) {
         result += grid.toString();
         result += '\n\n';
-        result += sc.shapeTypesToString();
+        result += sc
+          .shapeTypesToString()
+          .replace(/ {2}(.)/g, '$1')
+          .replace(/ /g, '.');
         result += '\n\n';
       }
     }

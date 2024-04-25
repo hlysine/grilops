@@ -1,6 +1,6 @@
 import { AnySort, Arith, Bool, Expr, Optimize, Solver } from 'z3-solver';
 import { Lattice, Point, PointString, Vector } from '../geometry';
-import { GrilopsContext } from '../utils/utils';
+import { DefaultMap, GrilopsContext } from '../utils/utils';
 import { ExpressionQuadTree } from '../utils/quadTree';
 import { PbEq, addToSolver } from '../utils/z3Shim';
 
@@ -329,7 +329,7 @@ export class ShapeConstrainer<
       );
     }
 
-    const rootOptions = new Map<PointString, Bool<Name>[]>();
+    const rootOptions = new DefaultMap<PointString, Bool<Name>[]>(() => []);
     for (let shapeIndex = 0; shapeIndex < this._variants.length; shapeIndex++) {
       for (const variant of this._variants[shapeIndex]) {
         for (const rootPoint of this._lattice.points) {
@@ -372,7 +372,7 @@ export class ShapeConstrainer<
               andTerms.push(otherPointsExpr);
             }
             rootOptions
-              .get(rootPoint.toString())!
+              .get(rootPoint.toString())
               .push(this._ctx.context.And(...andTerms));
           }
         }
@@ -384,7 +384,7 @@ export class ShapeConstrainer<
         `${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`,
         []
       )!;
-      const orTerms = rootOptions.get(p.toString())!;
+      const orTerms = rootOptions.get(p.toString());
       if (orTerms.length > 0) {
         orTerms.push(notHasInstanceIdExpr);
         this._solver.add(this._ctx.context.Or(...orTerms));

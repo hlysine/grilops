@@ -21,3 +21,22 @@ export function zip<T>(...args: T[][]): T[][] {
   const min = Math.min(...args.map(a => a.length));
   return Array.from({ length: min }, (_, i) => args.map(a => a[i]));
 }
+
+export class DefaultMap<K, V> extends Map<K, V> {
+  public default: () => V;
+
+  public get(key: K): V {
+    if (!this.has(key)) {
+      this.set(key, this.default());
+    }
+    return super.get(key)!;
+  }
+
+  constructor(
+    defaultFunc: () => V,
+    entries?: readonly (readonly [K, V])[] | null
+  ) {
+    super(entries);
+    this.default = defaultFunc;
+  }
+}

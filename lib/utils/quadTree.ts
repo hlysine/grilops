@@ -66,7 +66,7 @@ export class ExpressionQuadTree<
       const make = (cond: (p: Point) => boolean) => {
         const quadPoints = points.filter(cond);
         if (quadPoints.length > 0) {
-          return new ExpressionQuadTree(this._ctx, quadPoints, exprFuncs);
+          return new ExpressionQuadTree(this._ctx, quadPoints, this._exprFuncs);
         }
         return undefined;
       };

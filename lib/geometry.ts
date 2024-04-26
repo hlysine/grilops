@@ -43,6 +43,14 @@ export class Vector {
     return `V(${this.dy},${this.dx})`;
   }
 
+  public static fromString(s: VectorString): Vector {
+    const match = s.match(/^V\((\d+),(\d+)\)$/);
+    if (match === null) {
+      throw new Error(`Invalid VectorString: ${s}`);
+    }
+    return new Vector(parseInt(match[1]), parseInt(match[2]));
+  }
+
   public equals(other: Vector): boolean {
     return this.dy === other.dy && this.dx === other.dx;
   }
@@ -62,7 +70,8 @@ export class Vector {
   }
 }
 
-export type DirectionString = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
+export type DirectionKey = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
+export type DirectionString = `D(${DirectionKey},${VectorString})`;
 
 /**
  * A named direction vector that offsets by one space in the grid.
@@ -71,15 +80,30 @@ export class Direction {
   /**
    * The name of the direction.
    */
-  name: DirectionString;
+  name: DirectionKey;
   /**
    * The vector of the direction.
    */
   vector: Vector;
 
-  public constructor(name: DirectionString, vector: Vector) {
+  public constructor(name: DirectionKey, vector: Vector) {
     this.name = name;
     this.vector = vector;
+  }
+
+  public toString(): DirectionString {
+    return `D(${this.name},${this.vector.toString()})`;
+  }
+
+  public static fromString(s: DirectionString): Direction {
+    const match = s.match(/^D\((\w+),(V\(\d+,\d+\))\)$/);
+    if (match === null) {
+      throw new Error(`Invalid DirectionString: ${s}`);
+    }
+    return new Direction(
+      match[1] as DirectionKey,
+      Vector.fromString(match[2] as VectorString)
+    );
   }
 }
 
@@ -153,7 +177,7 @@ export class Neighbor<Name extends string> {
   /**
    * The location of the cell.
    */
-  point: Point;
+  location: Point;
   /**
    * The direction from the original cell.
    */
@@ -163,8 +187,12 @@ export class Neighbor<Name extends string> {
    */
   symbol: Arith<Name>;
 
-  public constructor(point: Point, direction: Direction, symbol: Arith<Name>) {
-    this.point = point;
+  public constructor(
+    location: Point,
+    direction: Direction,
+    symbol: Arith<Name>
+  ) {
+    this.location = location;
     this.direction = direction;
     this.symbol = symbol;
   }
@@ -612,7 +640,7 @@ export abstract class HexagonalLattice extends Lattice {
     let ds = [dir1.name, dir2.name];
     function charForPos(dirs: string[], chars: string[]) {
       for (const [d, c] of zip(dirs, chars)) {
-        if (ds.includes(d as DirectionString)) {
+        if (ds.includes(d as DirectionKey)) {
           ds = ds.filter(x => x !== d);
           return c.toString();
         }

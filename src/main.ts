@@ -14,6 +14,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </div>
 `;
 
+const updateText = (text: string) => {
+  document.querySelector<HTMLPreElement>('#result')!.textContent = text;
+};
+
 document
   .querySelector<HTMLButtonElement>('#execute')!
   .addEventListener('click', async () => {
@@ -32,6 +36,7 @@ document
       ShapeConstrainer,
       Shape,
       Vector,
+      RegionConstrainer,
     } = grilops({
       z3: Z3,
       context: ctx,
@@ -49,7 +54,7 @@ document
     // You can use a solver or an optimizer here
     // a solver is adequate most of the time, and it has better performance
     // this is just a demo of how the optimizer can be used
-    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
+    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_FD'));
 
     // DEMO CONSTRAINTS
 
@@ -93,15 +98,33 @@ document
       )
     );
 
-    // optimize for the fewest number of filled cells
-    grid.solver.minimize(
-      ctx.Sum(
-        ctx.Int.val(0),
-        ...[...grid.grid.values()].map(c =>
-          ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
-        )
-      )
-    );
+    // add some region constraints
+    const rc = new RegionConstrainer(lattice, grid.solver, false);
+    grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0).toString())!.eq(1));
+    for (const p of lattice.points) {
+      for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
+        grid.solver.add(
+          grid
+            .cellAt(p)
+            .neq(grid.cellAt(np.location))
+            .implies(
+              rc.regionIdGrid
+                .get(p.toString())!
+                .neq(rc.regionIdGrid.get(np.location.toString())!)
+            )
+        );
+      }
+    }
+
+    // // optimize for the fewest number of filled cells
+    // grid.solver.minimize(
+    //   ctx.Sum(
+    //     ctx.Int.val(0),
+    //     ...[...grid.grid.values()].map(c =>
+    //       ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
+    //     )
+    //   )
+    // );
 
     // run the solver by calling the solve method
     // the solution can be found in grid.solver.model if it exists
@@ -119,10 +142,13 @@ document
         .replace(/ {2}(.)/g, '$1')
         .replace(/ /g, '.');
       result += '\n\n';
+      updateText(result);
 
       // isUnique runs the solver again while excluding the current solution
       // grid.solver.model will be updated with the new solution if it exists
+      console.time('isUnique');
       const unique = await grid.isUnique();
+      console.timeEnd('isUnique');
       result += unique ? 'unique' : 'not unique';
       result += '\n\n';
       if (!unique) {
@@ -135,5 +161,5 @@ document
         result += '\n\n';
       }
     }
-    document.querySelector<HTMLPreElement>('#result')!.textContent = result;
+    updateText(result);
   });

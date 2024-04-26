@@ -22,6 +22,19 @@ export function zip<T>(...args: T[][]): T[][] {
   return Array.from({ length: min }, (_, i) => args.map(a => a[i]));
 }
 
+export function* combinations<T>(choices: T[], length: number): Generator<T[]> {
+  if (length === 0) {
+    yield [];
+  } else {
+    for (let i = 0; i < choices.length; i++) {
+      const first = choices[i];
+      for (const rest of combinations(choices.slice(i + 1), length - 1)) {
+        yield [first, ...rest];
+      }
+    }
+  }
+}
+
 export class DefaultMap<K, V> extends Map<K, V> {
   public default: () => V;
 

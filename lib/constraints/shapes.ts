@@ -1,3 +1,7 @@
+/**
+ * @module shapes This module supports puzzles that place fixed shape regions into the grid.
+ */
+
 import { AnySort, Arith, Bool, Expr, Optimize, Solver } from 'z3-solver';
 import { Lattice, Point, PointString, Vector } from '../geometry';
 import { DefaultMap, GrilopsContext } from '../utils/utils';

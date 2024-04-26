@@ -106,11 +106,11 @@ document
         grid.solver.add(
           grid
             .cellAt(p)
-            .neq(grid.cellAt(np.location))
-            .implies(
+            .eq(grid.cellAt(np.location))
+            .eq(
               rc.regionIdGrid
                 .get(p.toString())!
-                .neq(rc.regionIdGrid.get(np.location.toString())!)
+                .eq(rc.regionIdGrid.get(np.location.toString())!)
             )
         );
       }

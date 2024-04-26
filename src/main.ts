@@ -54,7 +54,7 @@ document
     // You can use a solver or an optimizer here
     // a solver is adequate most of the time, and it has better performance
     // this is just a demo of how the optimizer can be used
-    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_FD'));
+    const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
 
     // DEMO CONSTRAINTS
 
@@ -99,32 +99,32 @@ document
     );
 
     // add some region constraints
-    const rc = new RegionConstrainer(lattice, grid.solver, false);
-    grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0).toString())!.eq(1));
-    for (const p of lattice.points) {
-      for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
-        grid.solver.add(
-          grid
-            .cellAt(p)
-            .eq(grid.cellAt(np.location))
-            .eq(
-              rc.regionIdGrid
-                .get(p.toString())!
-                .eq(rc.regionIdGrid.get(np.location.toString())!)
-            )
-        );
-      }
-    }
+    // const rc = new RegionConstrainer(lattice, grid.solver, false);
+    // grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0).toString())!.eq(1));
+    // for (const p of lattice.points) {
+    //   for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
+    //     grid.solver.add(
+    //       grid
+    //         .cellAt(p)
+    //         .eq(grid.cellAt(np.location))
+    //         .eq(
+    //           rc.regionIdGrid
+    //             .get(p.toString())!
+    //             .eq(rc.regionIdGrid.get(np.location.toString())!)
+    //         )
+    //     );
+    //   }
+    // }
 
-    // // optimize for the fewest number of filled cells
-    // grid.solver.minimize(
-    //   ctx.Sum(
-    //     ctx.Int.val(0),
-    //     ...[...grid.grid.values()].map(c =>
-    //       ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
-    //     )
-    //   )
-    // );
+    // optimize for the fewest number of filled cells
+    grid.solver.minimize(
+      ctx.Sum(
+        ctx.Int.val(0),
+        ...[...grid.grid.values()].map(c =>
+          ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
+        )
+      )
+    );
 
     // run the solver by calling the solve method
     // the solution can be found in grid.solver.model if it exists

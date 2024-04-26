@@ -3,8 +3,8 @@
  */
 
 import { AnySort, Arith, Bool, Expr, Optimize, Solver } from 'z3-solver';
-import { Lattice, Point, PointString, Vector } from '../geometry';
-import { DefaultMap, GrilopsContext } from '../utils/utils';
+import { Lattice, Point, PointMap, Vector } from '../geometry';
+import { GrilopsContext, createDefualtMap } from '../utils/utils';
 import { ExpressionQuadTree } from '../utils/quadTree';
 import { PbEq, addToSolver } from '../utils/z3Shim';
 
@@ -151,9 +151,9 @@ export class ShapeConstrainer<
   private readonly _shapes: Shape<Name, Payload>[];
 
   private _variants: Shape<Name, Payload>[][] = [];
-  private _shapeTypeGrid: Map<PointString, Arith<Name>> = undefined!;
-  private _shapeInstanceGrid: Map<PointString, Arith<Name>> = undefined!;
-  private _shapePayloadGrid: Map<PointString, Payload> | undefined;
+  private _shapeTypeGrid: Map<Point, Arith<Name>> = undefined!;
+  private _shapeInstanceGrid: Map<Point, Arith<Name>> = undefined!;
+  private _shapePayloadGrid: Map<Point, Payload> | undefined;
 
   /**
    * @param lattice The structure of the grid.
@@ -228,7 +228,7 @@ export class ShapeConstrainer<
         this._solver.add(v.ge(-1));
       }
       this._solver.add(v.lt(this._shapes.length));
-      this._shapeTypeGrid.set(p.toString(), v);
+      this._shapeTypeGrid.set(p, v);
     }
 
     this._shapeInstanceGrid = new Map();
@@ -242,7 +242,7 @@ export class ShapeConstrainer<
         this._solver.add(v.ge(-1));
       }
       this._solver.add(v.lt(this._lattice.points.length));
-      this._shapeInstanceGrid.set(p.toString(), v);
+      this._shapeInstanceGrid.set(p, v);
     }
 
     const samplePayload = this._shapes[0].offsetsWithPayloads[0][1];
@@ -263,7 +263,7 @@ export class ShapeConstrainer<
           `scsp-${ShapeConstrainer._instanceIndex}-${p.y}-${p.x}`,
           sort
         );
-        this._shapePayloadGrid.set(p.toString(), pv as Payload);
+        this._shapePayloadGrid.set(p, pv as Payload);
       }
     }
   }
@@ -311,14 +311,14 @@ export class ShapeConstrainer<
     )) {
       quadTree.addExpr(`${ShapeExprKey.HAS_INSTANCE_ID}-${instanceId}`, p =>
         this._ctx.context.Eq(
-          this._shapeInstanceGrid.get(p.toString())!,
+          this._shapeInstanceGrid.get(p)!,
           intVals[instanceId]
         )
       );
       quadTree.addExpr(`${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`, p =>
         this._ctx.context.Not(
           this._ctx.context.Eq(
-            this._shapeInstanceGrid.get(p.toString())!,
+            this._shapeInstanceGrid.get(p)!,
             intVals[instanceId]
           )
         )
@@ -326,14 +326,13 @@ export class ShapeConstrainer<
     }
     for (let shapeIndex = 0; shapeIndex < this._variants.length; shapeIndex++) {
       quadTree.addExpr(`${ShapeExprKey.HAS_SHAPE_TYPE}-${shapeIndex}`, p =>
-        this._ctx.context.Eq(
-          this._shapeTypeGrid.get(p.toString())!,
-          intVals[shapeIndex]
-        )
+        this._ctx.context.Eq(this._shapeTypeGrid.get(p)!, intVals[shapeIndex])
       );
     }
 
-    const rootOptions = new DefaultMap<PointString, Bool<Name>[]>(() => []);
+    const rootOptions = new (createDefualtMap(PointMap))<Point, Bool<Name>[]>(
+      () => []
+    );
     for (let shapeIndex = 0; shapeIndex < this._variants.length; shapeIndex++) {
       for (const variant of this._variants[shapeIndex]) {
         for (const rootPoint of this._lattice.points) {
@@ -341,7 +340,7 @@ export class ShapeConstrainer<
           const pointPayloadTuples: [Point, Payload | undefined][] = [];
           for (const [offsetVector, payload] of variant.offsetsWithPayloads) {
             const point = rootPoint.translate(offsetVector);
-            if (!this._shapeInstanceGrid.has(point.toString())) {
+            if (!this._shapeInstanceGrid.has(point)) {
               pointPayloadTuples.length = 0;
               break;
             }
@@ -363,9 +362,7 @@ export class ShapeConstrainer<
                 )
               );
               if (this._shapePayloadGrid) {
-                andTerms.push(
-                  this._shapePayloadGrid.get(point.toString())!.eq(payload!)
-                );
+                andTerms.push(this._shapePayloadGrid.get(point)!.eq(payload!));
               }
             }
             const otherPointsExpr = quadTree.getOtherPointsExpr(
@@ -375,9 +372,7 @@ export class ShapeConstrainer<
             if (otherPointsExpr) {
               andTerms.push(otherPointsExpr);
             }
-            rootOptions
-              .get(rootPoint.toString())
-              .push(this._ctx.context.And(...andTerms));
+            rootOptions.get(rootPoint).push(this._ctx.context.And(...andTerms));
           }
         }
       }
@@ -388,7 +383,7 @@ export class ShapeConstrainer<
         `${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`,
         []
       )!;
-      const orTerms = rootOptions.get(p.toString());
+      const orTerms = rootOptions.get(p);
       if (orTerms.length > 0) {
         orTerms.push(notHasInstanceIdExpr);
         this._solver.add(this._ctx.context.Or(...orTerms));
@@ -427,12 +422,12 @@ export class ShapeConstrainer<
    * indexed by the shapes list passed in to the `ShapeConstrainer`
    * constructor), or -1 if no shape is placed within that cell.
    */
-  public get shapeTypeGrid(): Map<PointString, Arith<Name>> {
+  public get shapeTypeGrid() {
     return this._shapeTypeGrid;
   }
 
-  public getShapeTypeAt(p: Point): Arith<Name> {
-    return this._shapeTypeGrid.get(p.toString())!;
+  public getShapeTypeAt(p: Point) {
+    return this._shapeTypeGrid.get(p)!;
   }
 
   /**
@@ -441,12 +436,12 @@ export class ShapeConstrainer<
    * Each cell contains a number shared among all cells containing the same
    * instance of the shape, or -1 if no shape is placed within that cell.
    */
-  public get shapeInstanceGrid(): Map<PointString, Arith<Name>> {
+  public get shapeInstanceGrid() {
     return this._shapeInstanceGrid;
   }
 
-  public getShapeInstanceAt(p: Point): Arith<Name> {
-    return this._shapeInstanceGrid.get(p.toString())!;
+  public getShapeInstanceAt(p: Point) {
+    return this._shapeInstanceGrid.get(p)!;
   }
 
   /**
@@ -454,12 +449,12 @@ export class ShapeConstrainer<
    *
    * undefined if no payloads were provided during construction.
    */
-  public get shapePayloadGrid(): Map<PointString, Payload> | undefined {
+  public get shapePayloadGrid() {
     return this._shapePayloadGrid;
   }
 
-  public getShapePayloadAt(p: Point): Payload {
-    return this._shapePayloadGrid!.get(p.toString())!;
+  public getShapePayloadAt(p: Point) {
+    return this._shapePayloadGrid!.get(p)!;
   }
 
   /**
@@ -469,7 +464,7 @@ export class ShapeConstrainer<
    */
   public shapeTypesToString(): string {
     const model = this._solver.model();
-    const points = [...this._shapeTypeGrid.keys()].map(Point.fromString);
+    const points = [...this._shapeTypeGrid.keys()];
     const minY = Math.min(...points.map(p => p.y));
     const minX = Math.min(...points.map(p => p.x));
     const maxY = Math.max(...points.map(p => p.y));
@@ -479,8 +474,8 @@ export class ShapeConstrainer<
       for (let x = minX; x <= maxX; x++) {
         const p = new Point(y, x);
         let shapeIndex = -1;
-        if (this._shapeTypeGrid.has(p.toString())) {
-          const v = this._shapeTypeGrid.get(p.toString())!;
+        if (this._shapeTypeGrid.has(p)) {
+          const v = this._shapeTypeGrid.get(p)!;
           shapeIndex = Number(model.eval(v));
         }
         if (shapeIndex >= 0) {
@@ -501,7 +496,7 @@ export class ShapeConstrainer<
    */
   public shapeInstancesToString(): string {
     const model = this._solver.model();
-    const points = [...this._shapeInstanceGrid.keys()].map(Point.fromString);
+    const points = [...this._shapeInstanceGrid.keys()];
     const minY = Math.min(...points.map(p => p.y));
     const minX = Math.min(...points.map(p => p.x));
     const maxY = Math.max(...points.map(p => p.y));
@@ -511,8 +506,8 @@ export class ShapeConstrainer<
       for (let x = minX; x <= maxX; x++) {
         const p = new Point(y, x);
         let shapeInstance = -1;
-        if (this._shapeInstanceGrid.has(p.toString())) {
-          const v = this._shapeInstanceGrid.get(p.toString())!;
+        if (this._shapeInstanceGrid.has(p)) {
+          const v = this._shapeInstanceGrid.get(p)!;
           shapeInstance = Number(model.eval(v));
         }
         if (shapeInstance >= 0) {

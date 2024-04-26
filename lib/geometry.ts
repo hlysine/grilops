@@ -3,7 +3,7 @@
  */
 
 import { Arith } from 'z3-solver';
-import { zip } from './utils/utils';
+import { createStringMap, createStringSet, zip } from './utils/utils';
 
 export type VectorString = `V(${string},${string})`;
 
@@ -70,6 +70,9 @@ export class Vector {
   }
 }
 
+export const VectorMap = createStringMap(x => x.toString(), Vector.fromString);
+export const VectorSet = createStringSet(x => x.toString(), Vector.fromString);
+
 export type DirectionKey = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export type DirectionString = `D(${DirectionKey},${VectorString})`;
 
@@ -106,6 +109,15 @@ export class Direction {
     );
   }
 }
+
+export const DirectionMap = createStringMap(
+  x => x.toString(),
+  Direction.fromString
+);
+export const DirectionSet = createStringSet(
+  x => x.toString(),
+  Direction.fromString
+);
 
 export type PointString = `P(${string},${string})`;
 
@@ -168,6 +180,9 @@ export class Point {
   }
 }
 
+export const PointMap = createStringMap(x => x.toString(), Point.fromString);
+export const PointSet = createStringSet(x => x.toString(), Point.fromString);
+
 export type HookFunction = (point: Point) => string | undefined;
 
 /**
@@ -202,12 +217,12 @@ export class Neighbor<Name extends string> {
  * A base class for defining the structure of a grid.
  */
 export abstract class Lattice {
-  private _vectorDirection: Map<VectorString, Direction>;
+  private _vectorDirection: Map<Vector, Direction>;
 
   public constructor() {
-    this._vectorDirection = new Map();
+    this._vectorDirection = new VectorMap<Direction>();
     for (const direction of this.vertexSharingDirections()) {
-      this._vectorDirection.set(direction.vector.toString(), direction);
+      this._vectorDirection.set(direction.vector, direction);
     }
   }
 
@@ -248,7 +263,7 @@ export abstract class Lattice {
    * @returns The `Direction` opposite the given direction.
    */
   public oppositeDirection(direction: Direction): Direction {
-    return this._vectorDirection.get(direction.vector.negate().toString())!;
+    return this._vectorDirection.get(direction.vector.negate())!;
   }
 
   /**
@@ -284,14 +299,14 @@ export abstract class Lattice {
    * given directions from the given cell.
    */
   private static _getNeighbors<Name extends string>(
-    cellMap: Map<PointString, Arith<Name>>,
+    cellMap: Map<Point, Arith<Name>>,
     p: Point,
     directions: Direction[]
   ): Neighbor<Name>[] {
     const cells: Neighbor<Name>[] = [];
     for (const direction of directions) {
       const point = p.translate(direction);
-      const cell = cellMap.get(point.toString());
+      const cell = cellMap.get(point);
       if (cell !== undefined) {
         cells.push(new Neighbor(point, direction, cell));
       }
@@ -307,7 +322,7 @@ export abstract class Lattice {
    * edge with the given cell.
    */
   public edgeSharingNeighbors<Name extends string>(
-    cellMap: Map<PointString, Arith<Name>>,
+    cellMap: Map<Point, Arith<Name>>,
     p: Point
   ): Neighbor<Name>[] {
     return Lattice._getNeighbors(cellMap, p, this.edgeSharingDirections());
@@ -321,7 +336,7 @@ export abstract class Lattice {
    * vertex with the given cell.
    */
   public vertexSharingNeighbors<Name extends string>(
-    cellMap: Map<PointString, Arith<Name>>,
+    cellMap: Map<Point, Arith<Name>>,
     p: Point
   ): Neighbor<Name>[] {
     return Lattice._getNeighbors(cellMap, p, this.vertexSharingDirections());
@@ -451,7 +466,7 @@ export abstract class Lattice {
 
 export class RectangularLattice extends Lattice {
   private _points: Point[];
-  private _pointIndices: Map<PointString, number>;
+  private _pointIndices: Map<Point, number>;
 
   public static EDGE_DIRECTIONS = {
     N: new Direction('N', new Vector(-1, 0)),
@@ -475,9 +490,9 @@ export class RectangularLattice extends Lattice {
   public constructor(points: Point[]) {
     super();
     this._points = points.sort(Point.comparator);
-    this._pointIndices = new Map();
+    this._pointIndices = new PointMap<number>();
     this._points.forEach((p, i) => {
-      this._pointIndices.set(p.toString(), i);
+      this._pointIndices.set(p, i);
     });
   }
 
@@ -486,7 +501,7 @@ export class RectangularLattice extends Lattice {
   }
 
   public pointToIndex(point: Point): number | undefined {
-    return this._pointIndices.get(point.toString());
+    return this._pointIndices.get(point);
   }
 
   public edgeSharingDirections(): Direction[] {
@@ -580,7 +595,7 @@ export class RectangularLattice extends Lattice {
 
 export abstract class HexagonalLattice extends Lattice {
   private _points: Point[];
-  private _pointIndices: Map<PointString, number>;
+  private _pointIndices: Map<Point, number>;
   private static _DIRECTION_LABELS = {
     N: '\u2595 \n  ',
     NE: ' \u2571\n  ',
@@ -610,9 +625,9 @@ export abstract class HexagonalLattice extends Lattice {
       }
     }
     this._points = points.sort(Point.comparator);
-    this._pointIndices = new Map();
+    this._pointIndices = new PointMap<number>();
     this._points.forEach((p, i) => {
-      this._pointIndices.set(p.toString(), i);
+      this._pointIndices.set(p, i);
     });
   }
 
@@ -621,7 +636,7 @@ export abstract class HexagonalLattice extends Lattice {
   }
 
   public pointToIndex(point: Point): number | undefined {
-    return this._pointIndices.get(point.toString());
+    return this._pointIndices.get(point);
   }
 
   public vertexSharingDirections(): Direction[] {

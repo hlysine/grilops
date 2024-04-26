@@ -9,10 +9,11 @@
 import { Arith, Optimize, Solver } from 'z3-solver';
 import {
   Direction,
-  DirectionString,
+  DirectionMap,
   Lattice,
   Point,
-  PointString,
+  PointMap,
+  PointSet,
 } from '../geometry';
 import { GrilopsContext, combinations } from '../utils/utils';
 
@@ -46,15 +47,13 @@ export class RegionConstrainer<
   private readonly _minRegionSize: number;
   private readonly _maxRegionSize: number;
 
-  private _edgeSharingDirectionToIndex: Map<DirectionString, number> =
-    undefined!;
-
+  private _edgeSharingDirectionToIndex: Map<Direction, number> = undefined!;
   private _parentTypeToIndex: Map<string, number> = undefined!;
   private _parentTypes: string[] = undefined!;
-  private _parentGrid: Map<PointString, Arith<Name>> = undefined!;
-  private _subtreeSizeGrid: Map<PointString, Arith<Name>> = undefined!;
-  private _regionIdGrid: Map<PointString, Arith<Name>> = undefined!;
-  private _regionSizeGrid: Map<PointString, Arith<Name>> = undefined!;
+  private _parentGrid: Map<Point, Arith<Name>> = undefined!;
+  private _subtreeSizeGrid: Map<Point, Arith<Name>> = undefined!;
+  private _regionIdGrid: Map<Point, Arith<Name>> = undefined!;
+  private _regionSizeGrid: Map<Point, Arith<Name>> = undefined!;
 
   /**
    * @param lattice The structure of the grid.
@@ -108,7 +107,7 @@ export class RegionConstrainer<
    * indices corresponding to them.
    */
   private _manageEdgeSharingDirections() {
-    this._edgeSharingDirectionToIndex = new Map();
+    this._edgeSharingDirectionToIndex = new DirectionMap<number>();
     this._parentTypeToIndex = new Map([
       ['X', X],
       ['R', R],
@@ -117,7 +116,7 @@ export class RegionConstrainer<
     for (const d of this._lattice.edgeSharingDirections()) {
       const index = this._parentTypes.length;
       this._parentTypeToIndex.set(d.name, index);
-      this._edgeSharingDirectionToIndex.set(d.toString(), index);
+      this._edgeSharingDirectionToIndex.set(d, index);
       this._parentTypes.push(d.name);
     }
   }
@@ -126,7 +125,7 @@ export class RegionConstrainer<
    * Create the grids used to model region constraints.
    */
   private _createGrids() {
-    this._parentGrid = new Map();
+    this._parentGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
       const v = this._ctx.context.Int.const(
         `rcp-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
@@ -137,10 +136,10 @@ export class RegionConstrainer<
         this._solver.add(v.ge(X));
       }
       this._solver.add(v.lt(this._parentTypes.length));
-      this._parentGrid.set(p.toString(), v);
+      this._parentGrid.set(p, v);
     }
 
-    this._subtreeSizeGrid = new Map();
+    this._subtreeSizeGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
       const v = this._ctx.context.Int.const(
         `rcss-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
@@ -151,10 +150,10 @@ export class RegionConstrainer<
         this._solver.add(v.ge(0));
       }
       this._solver.add(v.le(this._maxRegionSize));
-      this._subtreeSizeGrid.set(p.toString(), v);
+      this._subtreeSizeGrid.set(p, v);
     }
 
-    this._regionIdGrid = new Map();
+    this._regionIdGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
       const v = this._ctx.context.Int.const(
         `rcid-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
@@ -165,15 +164,15 @@ export class RegionConstrainer<
         this._solver.add(v.ge(-1));
       }
       this._solver.add(v.lt(this._lattice.points.length));
-      const parent = this._parentGrid.get(p.toString())!;
+      const parent = this._parentGrid.get(p)!;
       this._solver.add(parent.eq(X).implies(v.eq(-1)));
       const pointIndex = this._lattice.pointToIndex(p);
       if (pointIndex === undefined) throw new Error('Point index is undefined');
       this._solver.add(parent.eq(R).implies(v.eq(pointIndex)));
-      this._regionIdGrid.set(p.toString(), v);
+      this._regionIdGrid.set(p, v);
     }
 
-    this._regionSizeGrid = new Map();
+    this._regionSizeGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
       const v = this._ctx.context.Int.const(
         `rcrs-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
@@ -184,11 +183,11 @@ export class RegionConstrainer<
         this._solver.add(v.ge(this._minRegionSize).or(v.eq(-1)));
       }
       this._solver.add(v.le(this._maxRegionSize));
-      const parent = this._parentGrid.get(p.toString())!;
-      const subtreeSize = this._subtreeSizeGrid.get(p.toString())!;
+      const parent = this._parentGrid.get(p)!;
+      const subtreeSize = this._subtreeSizeGrid.get(p)!;
       this._solver.add(parent.eq(X).implies(v.eq(-1)));
       this._solver.add(parent.eq(R).implies(v.eq(subtreeSize)));
-      this._regionSizeGrid.set(p.toString(), v);
+      this._regionSizeGrid.set(p, v);
     }
   }
 
@@ -196,7 +195,7 @@ export class RegionConstrainer<
    * Add constraints to the region modeling grids.
    */
   private _addConstraints() {
-    const constrainSide = (p: PointString, sp: PointString, sd: number) => {
+    const constrainSide = (p: Point, sp: Point, sd: number) => {
       this._solver.add(
         this._parentGrid
           .get(p)!
@@ -216,7 +215,7 @@ export class RegionConstrainer<
       );
     };
 
-    const subtreeSizeTerm = (sp: PointString, sd: number) => {
+    const subtreeSizeTerm = (sp: Point, sd: number) => {
       return this._ctx.context.If(
         this._parentGrid.get(sp)!.eq(sd),
         this._subtreeSizeGrid.get(sp)!,
@@ -225,28 +224,26 @@ export class RegionConstrainer<
     };
 
     for (const p of this._lattice.points) {
-      const pStr = p.toString();
-      const parent = this._parentGrid.get(pStr)!;
+      const parent = this._parentGrid.get(p)!;
       const subtreeSizeTerms: Arith<Name>[] = [];
 
       for (const d of this._lattice.edgeSharingDirections()) {
         const sp = p.translate(d.vector);
-        const spStr = sp.toString();
-        if (this._parentGrid.has(spStr)) {
+        if (this._parentGrid.has(sp)) {
           const oppositeIndex = this._edgeSharingDirectionToIndex.get(
-            this._lattice.oppositeDirection(d).toString()
+            this._lattice.oppositeDirection(d)
           )!;
-          constrainSide(pStr, spStr, oppositeIndex);
-          subtreeSizeTerms.push(subtreeSizeTerm(spStr, oppositeIndex));
+          constrainSide(p, sp, oppositeIndex);
+          subtreeSizeTerms.push(subtreeSizeTerm(sp, oppositeIndex));
         } else {
-          const dIndex = this._edgeSharingDirectionToIndex.get(d.toString())!;
+          const dIndex = this._edgeSharingDirectionToIndex.get(d)!;
           this._solver.add(parent.neq(dIndex));
         }
       }
 
       this._solver.add(
         this._subtreeSizeGrid
-          .get(pStr)!
+          .get(p)!
           .eq(
             this._ctx.context.Sum(
               this._ctx.context.If(parent.neq(X), 1, 0),
@@ -259,7 +256,6 @@ export class RegionConstrainer<
 
   private _addRectangularConstraints() {
     for (const p of this._lattice.points) {
-      const pStr = p.toString();
       const neighbors = this._lattice.edgeSharingNeighbors(
         this._regionIdGrid,
         p
@@ -273,28 +269,23 @@ export class RegionConstrainer<
           this._regionIdGrid,
           n2.location
         );
-        const commonPoints = new Set([
-          ...n1Neighbors.map(n => n.location.toString()),
-          ...n2Neighbors.map(n => n.location.toString()),
+        const commonPoints = new PointSet([
+          ...n1Neighbors.map(n => n.location),
+          ...n2Neighbors.map(n => n.location),
         ]);
-        commonPoints.delete(pStr);
-        for (const cp of commonPoints) {
-          if (cp === pStr) commonPoints.delete(cp);
-        }
+        commonPoints.delete(p);
         if (commonPoints.size > 0) {
           this._solver.add(
             this._ctx.context
               .And(
-                n1.symbol.eq(this._regionIdGrid.get(pStr)!),
-                n2.symbol.eq(this._regionIdGrid.get(pStr)!),
-                this._regionIdGrid.get(pStr)!.neq(-1)
+                n1.symbol.eq(this._regionIdGrid.get(p)!),
+                n2.symbol.eq(this._regionIdGrid.get(p)!),
+                this._regionIdGrid.get(p)!.neq(-1)
               )
               .implies(
                 this._ctx.context.And(
                   ...Array.from(commonPoints).map(cp =>
-                    this._regionIdGrid
-                      .get(cp)!
-                      .eq(this._regionIdGrid.get(pStr)!)
+                    this._regionIdGrid.get(cp)!.eq(this._regionIdGrid.get(p)!)
                   )
                 )
               )
@@ -313,10 +304,8 @@ export class RegionConstrainer<
    * @returns The `RegionConstrainer.parent_grid` value that means that the
    * parent in its region's subtree is the cell offset by that direction.
    */
-  public edgeSharingDirectionToIndex(direction: Direction | DirectionString) {
-    return this._edgeSharingDirectionToIndex.get(
-      typeof direction === 'string' ? direction : direction.toString()
-    )!;
+  public edgeSharingDirectionToIndex(direction: Direction) {
+    return this._edgeSharingDirectionToIndex.get(direction)!;
   }
 
   /**
@@ -396,7 +385,7 @@ export class RegionConstrainer<
     const model = this._solver.model();
 
     const printFunction = (p: Point) => {
-      const v = this._parentGrid.get(p.toString())!;
+      const v = this._parentGrid.get(p)!;
       const parentIndex = Number(model.eval(v));
       const parentType = this._parentTypes[parentIndex];
       return labels[parentType];
@@ -413,7 +402,7 @@ export class RegionConstrainer<
   public subtreeSizesToString() {
     const model = this._solver.model();
     const printFunction = (p: Point) => {
-      const v = this._subtreeSizeGrid.get(p.toString())!;
+      const v = this._subtreeSizeGrid.get(p)!;
       const value = Number(model.eval(v));
       return value.toString().padStart(3, ' ');
     };
@@ -429,7 +418,7 @@ export class RegionConstrainer<
   public regionIdsToString() {
     const model = this._solver.model();
     const printFunction = (p: Point) => {
-      const v = this._regionIdGrid.get(p.toString())!;
+      const v = this._regionIdGrid.get(p)!;
       const value = Number(model.eval(v));
       return value.toString().padStart(3, ' ');
     };
@@ -445,7 +434,7 @@ export class RegionConstrainer<
   public regionSizesToString() {
     const model = this._solver.model();
     const printFunction = (p: Point) => {
-      const v = this._regionSizeGrid.get(p.toString())!;
+      const v = this._regionSizeGrid.get(p)!;
       const value = Number(model.eval(v));
       return value.toString().padStart(3, ' ');
     };

@@ -54,8 +54,8 @@ export function reduceCells<
   const stopTerms: Bool<Name>[] = [];
   const accTerms: Accumulator[] = [initializer];
   let p = start;
-  while (symbolGrid.grid.has(p.toString())) {
-    const cell = symbolGrid.grid.get(p.toString())!;
+  while (symbolGrid.grid.has(p)) {
+    const cell = symbolGrid.grid.get(p)!;
     const accTerm = accumulate(accTerms[accTerms.length - 1], cell, p);
     accTerms.push(accTerm);
     stopTerms.push(stop(accTerm, cell, p));

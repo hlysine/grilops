@@ -3,7 +3,7 @@
  */
 
 import { Arith, Bool, Optimize, Solver } from 'z3-solver';
-import { Lattice, Neighbor, Point, PointString } from './geometry';
+import { Lattice, Neighbor, Point, PointMap } from './geometry';
 import { SymbolSet } from './symbols';
 import { GrilopsContext } from './utils/utils';
 
@@ -22,7 +22,7 @@ export class SymbolGrid<
   private _lattice: Lattice;
   private _symbolSet: SymbolSet;
   private _solver: Core;
-  private _grid: Map<PointString, Arith<Name>>;
+  private _grid: Map<Point, Arith<Name>>;
 
   /**
    * @param context The context in which to construct the grid.
@@ -40,13 +40,13 @@ export class SymbolGrid<
     this._lattice = lattice;
     this._symbolSet = symbolSet;
     this._solver = solver ?? (new this._ctx.context.Solver() as Core);
-    this._grid = new Map();
+    this._grid = new PointMap<Arith<Name>>();
     for (const p of lattice.points) {
       const v = this._ctx.context.Int.const(
         `sg_${SymbolGrid._instanceIndex}_${p.y}-${p.x}`
       );
       this._solver.add(v.ge(symbolSet.minIndex()), v.le(symbolSet.maxIndex()));
-      this._grid.set(p.toString(), v);
+      this._grid.set(p, v);
     }
   }
 
@@ -107,7 +107,7 @@ export class SymbolGrid<
    * @returns The cell at the given point.
    */
   public cellAt(p: Point) {
-    return this._grid.get(p.toString())!;
+    return this._grid.get(p)!;
   }
 
   /**
@@ -118,7 +118,7 @@ export class SymbolGrid<
    * this value.
    */
   public cellIs(p: Point, value: number) {
-    return this._grid.get(p.toString())!.eq(value);
+    return this._grid.get(p)!.eq(value);
   }
 
   /**
@@ -129,7 +129,7 @@ export class SymbolGrid<
    * one of these values.
    */
   public cellIsOneOf(p: Point, values: number[]) {
-    const cell = this._grid.get(p.toString())!;
+    const cell = this._grid.get(p)!;
     return this._ctx.context.Or(...values.map(v => cell.eq(v)));
   }
 
@@ -164,9 +164,9 @@ export class SymbolGrid<
    */
   public solvedGrid() {
     const model = this._solver.model();
-    const result = new Map<PointString, number>();
-    for (const [pString, cell] of this._grid.entries()) {
-      result.set(pString, Number(model.eval(cell)));
+    const result = new PointMap<number>();
+    for (const [p, cell] of this._grid.entries()) {
+      result.set(p, Number(model.eval(cell)));
     }
     return result;
   }
@@ -191,7 +191,7 @@ export class SymbolGrid<
     );
 
     const printFunction = (p: Point) => {
-      const cell = this._grid.get(p.toString())!;
+      const cell = this._grid.get(p)!;
       const i = Number(model.eval(cell));
       let label: string | undefined;
       if (hookFunction) {

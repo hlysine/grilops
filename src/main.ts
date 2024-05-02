@@ -1,4 +1,5 @@
-import fillomino from './fillomino';
+// import fillomino from './fillomino';
+import test from './test';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
@@ -21,5 +22,6 @@ document
   .querySelector<HTMLButtonElement>('#execute')!
   .addEventListener('click', async () => {
     console.log('Start solving');
-    await fillomino(updateText);
+    // await fillomino(updateText);
+    await test(updateText);
   });

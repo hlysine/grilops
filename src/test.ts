@@ -14,6 +14,7 @@ export default async function test(updateText: (val: string) => void) {
     Point,
     countCells,
     RectangularLattice,
+    RegionConstrainer,
   } = grilops({
     z3: Z3,
     context: ctx,
@@ -26,7 +27,7 @@ export default async function test(updateText: (val: string) => void) {
     ['DARK', '#'],
     ['LIGHT', '*'],
   ]);
-  const lattice = getRectangleLattice(10, 10);
+  const lattice = getRectangleLattice(3, 3);
 
   // You can use a solver or an optimizer here
   // a solver is adequate most of the time, and it has better performance
@@ -36,18 +37,18 @@ export default async function test(updateText: (val: string) => void) {
   // DEMO CONSTRAINTS
 
   // add some sightline constraints
-  for (let i = 0; i < 8; i++) {
-    const cell = grid.cellAt(new Point(i, 0));
-    grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
-    const count = countCells(
-      grid,
-      new Point(i, 0),
-      RectangularLattice.EDGE_DIRECTIONS.E,
-      c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
-      c => c.neq(cell)
-    );
-    grid.solver.add(count.eq(ctx.Int.val(i + 1)));
-  }
+  // for (let i = 0; i < 8; i++) {
+  //   const cell = grid.cellAt(new Point(i, 0));
+  //   grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
+  //   const count = countCells(
+  //     grid,
+  //     new Point(i, 0),
+  //     RectangularLattice.EDGE_DIRECTIONS.E,
+  //     c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
+  //     c => c.neq(cell)
+  //   );
+  //   grid.solver.add(count.eq(ctx.Int.val(i + 1)));
+  // }
 
   // add some shape constraints
   // const sc = new ShapeConstrainer(
@@ -76,18 +77,18 @@ export default async function test(updateText: (val: string) => void) {
   // );
 
   // add some region constraints
-  // const rc = new RegionConstrainer(lattice, grid.solver, false);
-  // grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0))!.eq(1));
-  // for (const p of lattice.points) {
-  //   for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
-  //     grid.solver.add(
-  //       grid
-  //         .cellAt(p)
-  //         .eq(grid.cellAt(np.location))
-  //         .eq(rc.regionIdGrid.get(p)!.eq(rc.regionIdGrid.get(np.location)!))
-  //     );
-  //   }
-  // }
+  const rc = new RegionConstrainer(lattice, grid.solver);
+  grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0))!.eq(1));
+  for (const p of lattice.points) {
+    for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
+      grid.solver.add(
+        grid
+          .cellAt(p)
+          .eq(grid.cellAt(np.location))
+          .eq(rc.regionIdGrid.get(p)!.eq(rc.regionIdGrid.get(np.location)!))
+      );
+    }
+  }
 
   // optimize for the fewest number of filled cells
   grid.solver.minimize(

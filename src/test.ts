@@ -15,6 +15,9 @@ export default async function test(updateText: (val: string) => void) {
     countCells,
     RectangularLattice,
     RegionConstrainer,
+    ShapeConstrainer,
+    Shape,
+    Vector,
   } = grilops({
     z3: Z3,
     context: ctx,
@@ -27,54 +30,54 @@ export default async function test(updateText: (val: string) => void) {
     ['DARK', '#'],
     ['LIGHT', '*'],
   ]);
-  const lattice = getRectangleLattice(3, 3);
+  const lattice = getRectangleLattice(10, 10);
 
   // You can use a solver or an optimizer here
   // a solver is adequate most of the time, and it has better performance
   // this is just a demo of how the optimizer can be used
-  const grid = new SymbolGrid(lattice, symbolSet, new ctx.Optimize());
+  const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_FD'));
 
   // DEMO CONSTRAINTS
 
   // add some sightline constraints
-  // for (let i = 0; i < 8; i++) {
-  //   const cell = grid.cellAt(new Point(i, 0));
-  //   grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
-  //   const count = countCells(
-  //     grid,
-  //     new Point(i, 0),
-  //     RectangularLattice.EDGE_DIRECTIONS.E,
-  //     c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
-  //     c => c.neq(cell)
-  //   );
-  //   grid.solver.add(count.eq(ctx.Int.val(i + 1)));
-  // }
+  for (let i = 0; i < 8; i++) {
+    const cell = grid.cellAt(new Point(i, 0));
+    grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
+    const count = countCells(
+      grid,
+      new Point(i, 0),
+      RectangularLattice.EDGE_DIRECTIONS.E,
+      c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
+      c => c.neq(cell)
+    );
+    grid.solver.add(count.eq(ctx.Int.val(i + 1)));
+  }
 
   // add some shape constraints
-  // const sc = new ShapeConstrainer(
-  //   lattice,
-  //   [
-  //     new Shape([
-  //       new Vector(0, 0),
-  //       new Vector(0, 1),
-  //       new Vector(1, 0),
-  //       new Vector(1, 1),
-  //     ]),
-  //   ],
-  //   grid.solver,
-  //   false,
-  //   true,
-  //   true,
-  //   true
-  // );
-  // lattice.points.forEach(p =>
-  //   grid.solver.add(
-  //     grid
-  //       .cellAt(p)
-  //       .neq(symbolSet.indices.DARK)
-  //       .implies(sc.getShapeTypeAt(p).eq(-1))
-  //   )
-  // );
+  const sc = new ShapeConstrainer(
+    lattice,
+    [
+      new Shape([
+        new Vector(0, 0),
+        new Vector(0, 1),
+        new Vector(1, 0),
+        new Vector(1, 1),
+      ]),
+    ],
+    grid.solver,
+    false,
+    true,
+    true,
+    true
+  );
+  lattice.points.forEach(p =>
+    grid.solver.add(
+      grid
+        .cellAt(p)
+        .neq(symbolSet.indices.DARK)
+        .implies(sc.getShapeTypeAt(p).eq(-1))
+    )
+  );
 
   // add some region constraints
   const rc = new RegionConstrainer(lattice, grid.solver);
@@ -91,14 +94,14 @@ export default async function test(updateText: (val: string) => void) {
   }
 
   // optimize for the fewest number of filled cells
-  grid.solver.minimize(
-    ctx.Sum(
-      ctx.Int.val(0),
-      ...[...grid.grid.values()].map(c =>
-        ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
-      )
-    )
-  );
+  // grid.solver.minimize(
+  //   ctx.Sum(
+  //     ctx.Int.val(0),
+  //     ...[...grid.grid.values()].map(c =>
+  //       ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
+  //     )
+  //   )
+  // );
 
   // run the solver by calling the solve method
   // the solution can be found in grid.solver.model if it exists
@@ -111,11 +114,11 @@ export default async function test(updateText: (val: string) => void) {
   if (solution) {
     result += grid.toString();
     result += '\n\n';
-    // result += sc
-    //   .shapeTypesToString()
-    //   .replace(/ {2}(.)/g, '$1')
-    //   .replace(/ /g, '.');
-    // result += '\n\n';
+    result += sc
+      .shapeTypesToString()
+      .replace(/ {2}(.)/g, '$1')
+      .replace(/ /g, '.');
+    result += '\n\n';
     updateText(result);
 
     // isUnique runs the solver again while excluding the current solution
@@ -128,11 +131,11 @@ export default async function test(updateText: (val: string) => void) {
     if (!unique) {
       result += grid.toString();
       result += '\n\n';
-      // result += sc
-      //   .shapeTypesToString()
-      //   .replace(/ {2}(.)/g, '$1')
-      //   .replace(/ /g, '.');
-      // result += '\n\n';
+      result += sc
+        .shapeTypesToString()
+        .replace(/ {2}(.)/g, '$1')
+        .replace(/ /g, '.');
+      result += '\n\n';
     }
   }
   updateText(result);

@@ -22,7 +22,7 @@ export class ExpressionQuadTree<
   Name extends string,
   ExprKey extends string | number | symbol,
 > {
-  private readonly _ctx: GrilopsContext<Name>;
+  public readonly ctx: GrilopsContext<Name>;
   private _exprs = new Map<ExprKey, Bool<Name>>();
   private _exprFuncs: ExprFuncMap<Name, ExprKey>;
 
@@ -44,7 +44,7 @@ export class ExpressionQuadTree<
     points: Point[],
     exprFuncs?: ExprFuncMap<Name, ExprKey> | undefined
   ) {
-    this._ctx = context;
+    this.ctx = context;
     if (points.length === 0) {
       throw new Error(
         'A quadtree node must be constructed with at least one point'
@@ -66,7 +66,7 @@ export class ExpressionQuadTree<
       const make = (cond: (p: Point) => boolean) => {
         const quadPoints = points.filter(cond);
         if (quadPoints.length > 0) {
-          return new ExpressionQuadTree(this._ctx, quadPoints, this._exprFuncs);
+          return new ExpressionQuadTree(this.ctx, quadPoints, this._exprFuncs);
         }
         return undefined;
       };
@@ -167,12 +167,12 @@ export class ExpressionQuadTree<
       const terms = this._quads
         .map(q => q.getOtherPointsExpr(key, coveredPoints))
         .filter(Boolean) as Bool<Name>[];
-      return this._ctx.context.And(...terms);
+      return this.ctx.context.And(...terms);
     }
 
     let expr = this._exprs.get(key);
     if (!expr) {
-      expr = this._ctx.context.And(...this.getExprs(key));
+      expr = this.ctx.context.And(...this.getExprs(key));
       this._exprs.set(key, expr);
     }
     return expr;
@@ -182,19 +182,19 @@ export class ExpressionQuadTree<
 export default function quadTree<Name extends string>(
   context: GrilopsContext<Name>
 ): {
+  /**
+   * A quadtree for caching and aggregating z3 expressions.
+   *
+   * This class builds a quadtree data structure from a list of points, and
+   * provides the ability to lazily construct and cache z3 expressions that
+   * reference these points.
+   */
   ExpressionQuadTree: new <ExprKey extends string | number | symbol>(
     points: Point[],
     exprFuncs?: ExprFuncMap<Name, ExprKey>
   ) => ExpressionQuadTree<Name, ExprKey>;
 } {
   return {
-    /**
-     * A quadtree for caching and aggregating z3 expressions.
-     *
-     * This class builds a quadtree data structure from a list of points, and
-     * provides the ability to lazily construct and cache z3 expressions that
-     * reference these points.
-     */
     ExpressionQuadTree: function <ExprKey extends string | number | symbol>(
       points: Point[],
       exprFuncs?: ExprFuncMap<Name, ExprKey>

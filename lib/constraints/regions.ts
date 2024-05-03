@@ -40,7 +40,7 @@ export class RegionConstrainer<
 > {
   private static _instanceIndex = 0;
 
-  private readonly _ctx: GrilopsContext<Name>;
+  public readonly ctx: GrilopsContext<Name>;
   private readonly _solver: Core;
   private readonly _lattice: Lattice;
   private readonly _complete: boolean;
@@ -76,11 +76,11 @@ export class RegionConstrainer<
     minRegionSize: number | undefined = undefined,
     maxRegionSize: number | undefined = undefined
   ) {
-    this._ctx = context;
+    this.ctx = context;
     RegionConstrainer._instanceIndex += 1;
 
     this._lattice = lattice;
-    this._solver = solver ?? (new this._ctx.context.Solver() as Core);
+    this._solver = solver ?? (new this.ctx.context.Solver() as Core);
     this._complete = complete;
     if (minRegionSize !== undefined) {
       this._minRegionSize = minRegionSize;
@@ -127,7 +127,7 @@ export class RegionConstrainer<
   private _createGrids() {
     this._parentGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `rcp-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -141,7 +141,7 @@ export class RegionConstrainer<
 
     this._subtreeSizeGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `rcss-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -155,7 +155,7 @@ export class RegionConstrainer<
 
     this._regionIdGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `rcid-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -174,7 +174,7 @@ export class RegionConstrainer<
 
     this._regionSizeGrid = new PointMap<Arith<Name>>();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `rcrs-${RegionConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -207,7 +207,7 @@ export class RegionConstrainer<
           .get(sp)!
           .eq(sd)
           .implies(
-            this._ctx.context.And(
+            this.ctx.context.And(
               this._regionIdGrid.get(p)!.eq(this._regionIdGrid.get(sp)!),
               this._regionSizeGrid.get(p)!.eq(this._regionSizeGrid.get(sp)!)
             )
@@ -216,10 +216,10 @@ export class RegionConstrainer<
     };
 
     const subtreeSizeTerm = (sp: Point, sd: number) => {
-      return this._ctx.context.If(
+      return this.ctx.context.If(
         this._parentGrid.get(sp)!.eq(sd),
         this._subtreeSizeGrid.get(sp)!,
-        this._ctx.context.Int.val(0)
+        this.ctx.context.Int.val(0)
       );
     };
 
@@ -245,8 +245,8 @@ export class RegionConstrainer<
         this._subtreeSizeGrid
           .get(p)!
           .eq(
-            this._ctx.context.Sum(
-              this._ctx.context.If(parent.neq(X), 1, 0),
+            this.ctx.context.Sum(
+              this.ctx.context.If(parent.neq(X), 1, 0),
               ...subtreeSizeTerms
             )
           )
@@ -276,14 +276,14 @@ export class RegionConstrainer<
         commonPoints.delete(p);
         if (commonPoints.size > 0) {
           this._solver.add(
-            this._ctx.context
+            this.ctx.context
               .And(
                 n1.symbol.eq(this._regionIdGrid.get(p)!),
                 n2.symbol.eq(this._regionIdGrid.get(p)!),
                 this._regionIdGrid.get(p)!.neq(-1)
               )
               .implies(
-                this._ctx.context.And(
+                this.ctx.context.And(
                   ...Array.from(commonPoints).map(cp =>
                     this._regionIdGrid.get(cp)!.eq(this._regionIdGrid.get(p)!)
                   )
@@ -446,6 +446,18 @@ export class RegionConstrainer<
 export default function regions<Name extends string>(
   context: GrilopsContext<Name>
 ): {
+  /**
+   * @param lattice The structure of the grid.
+   * @param solver A `Solver` object. If None, a `Solver` will be constructed.
+   * @param complete If true, every cell must be part of a region. Defaults to
+   * true.
+   * @param rectangular If true, every region must be "rectangular"; for each
+   * cell in a region, ensure that pairs of its neighbors that are part of
+   * the same region each share an additional neighbor that's part of the
+   * same region when possible.
+   * @param minRegionSize The minimum possible size of a region.
+   * @param maxRegionSize The maximum possible size of a region.
+   */
   RegionConstrainer: new <
     const Core extends Solver<Name> | Optimize<Name> =
       | Solver<Name>
@@ -460,18 +472,6 @@ export default function regions<Name extends string>(
   ) => RegionConstrainer<Name, Core>;
 } {
   return {
-    /**
-     * @param lattice The structure of the grid.
-     * @param solver A `Solver` object. If None, a `Solver` will be constructed.
-     * @param complete If true, every cell must be part of a region. Defaults to
-     * true.
-     * @param rectangular If true, every region must be "rectangular"; for each
-     * cell in a region, ensure that pairs of its neighbors that are part of
-     * the same region each share an additional neighbor that's part of the
-     * same region when possible.
-     * @param minRegionSize The minimum possible size of a region.
-     * @param maxRegionSize The maximum possible size of a region.
-     */
     RegionConstrainer: function <
       const Core extends Solver<Name> | Optimize<Name> =
         | Solver<Name>

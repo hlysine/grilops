@@ -3,7 +3,12 @@
  */
 
 import { Arith } from 'z3-solver';
-import { createStringMap, createStringSet, zip } from './utils/utils';
+import {
+  createDefualtMap,
+  createStringMap,
+  createStringSet,
+  zip,
+} from './utils/utils';
 
 export type VectorString = `V(${string},${string})`;
 
@@ -72,6 +77,7 @@ export class Vector {
 
 export const VectorMap = createStringMap(x => x.toString(), Vector.fromString);
 export const VectorSet = createStringSet(x => x.toString(), Vector.fromString);
+export const DefaultVectorMap = createDefualtMap(VectorMap);
 
 export type DirectionKey = 'N' | 'S' | 'E' | 'W' | 'NE' | 'NW' | 'SE' | 'SW';
 export type DirectionString = `D(${DirectionKey},${VectorString})`;
@@ -118,6 +124,7 @@ export const DirectionSet = createStringSet(
   x => x.toString(),
   Direction.fromString
 );
+export const DefaultDirectionMap = createDefualtMap(DirectionMap);
 
 export type PointString = `P(${string},${string})`;
 
@@ -182,6 +189,7 @@ export class Point {
 
 export const PointMap = createStringMap(x => x.toString(), Point.fromString);
 export const PointSet = createStringSet(x => x.toString(), Point.fromString);
+export const DefaultPointMap = createDefualtMap(PointMap);
 
 export type HookFunction = (point: Point) => string | undefined;
 

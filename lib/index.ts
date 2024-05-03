@@ -6,6 +6,7 @@ import * as symbols from './symbols';
 import sightlines from './constraints/sightlines';
 import shapes from './constraints/shapes';
 import regions from './constraints/regions';
+import * as paths from './constraints/paths';
 
 export * from './utils/utils';
 export * from './geometry';
@@ -15,6 +16,7 @@ export * from './symbols';
 export * from './constraints/sightlines';
 export * from './constraints/shapes';
 export * from './constraints/regions';
+export * from './constraints/paths';
 
 export function grilops<Name extends string>(context: GrilopsContext<Name>) {
   return {
@@ -25,5 +27,6 @@ export function grilops<Name extends string>(context: GrilopsContext<Name>) {
     ...sightlines(context),
     ...shapes(context),
     ...regions(context),
+    ...paths,
   };
 }

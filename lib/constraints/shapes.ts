@@ -3,8 +3,8 @@
  */
 
 import { AnySort, Arith, Bool, Expr, Optimize, Solver } from 'z3-solver';
-import { Lattice, Point, PointMap, Vector } from '../geometry';
-import { GrilopsContext, createDefualtMap } from '../utils/utils';
+import { DefaultPointMap, Lattice, Point, Vector } from '../geometry';
+import { GrilopsContext } from '../utils/utils';
 import { ExpressionQuadTree } from '../utils/quadTree';
 import { PbEq, addToSolver } from '../utils/z3Shim';
 
@@ -24,7 +24,7 @@ export type Offset<Name extends string, Payload extends Expr<Name>> =
  * Each offset may optionally have an associated payload value.
  */
 export class Shape<Name extends string, Payload extends Expr<Name>> {
-  private readonly _ctx: GrilopsContext<Name>;
+  public readonly ctx: GrilopsContext<Name>;
   private _offsetTuples: [Vector, Payload | undefined][] = [];
 
   /**
@@ -36,7 +36,7 @@ export class Shape<Name extends string, Payload extends Expr<Name>> {
     context: GrilopsContext<Name>,
     offsets: Offset<Name, Payload>[]
   ) {
-    this._ctx = context;
+    this.ctx = context;
     for (const offset of offsets) {
       if (offset instanceof Vector) {
         this._offsetTuples.push([offset, undefined]);
@@ -68,7 +68,7 @@ export class Shape<Name extends string, Payload extends Expr<Name>> {
    */
   public transform(f: (vector: Vector) => Vector): Shape<Name, Payload> {
     return new Shape(
-      this._ctx,
+      this.ctx,
       this._offsetTuples.map(([vector, payload]) => [f(vector), payload])
     );
   }
@@ -90,7 +90,7 @@ export class Shape<Name extends string, Payload extends Expr<Name>> {
       .sort(([a], [b]) => Vector.comparator(a, b));
     const firstNegated = offsetTuples[0][0].negate();
     return new Shape(
-      this._ctx,
+      this.ctx,
       offsetTuples.map(([vector, payload]) => [
         vector.translate(firstNegated),
         payload,
@@ -111,8 +111,8 @@ export class Shape<Name extends string, Payload extends Expr<Name>> {
       if (!v1.equals(v2)) {
         return false;
       }
-      if (this._ctx.context.isExpr(p1) && this._ctx.context.isExpr(p2)) {
-        if (!this._ctx.context.Eq(p1, p2)) {
+      if (this.ctx.context.isExpr(p1) && this.ctx.context.isExpr(p2)) {
+        if (!this.ctx.context.Eq(p1, p2)) {
           return false;
         }
       } else if (p1 === undefined) {
@@ -143,7 +143,7 @@ export class ShapeConstrainer<
 > {
   private static _instanceIndex = 0;
 
-  private readonly _ctx: GrilopsContext<Name>;
+  public readonly ctx: GrilopsContext<Name>;
   private readonly _solver: Core;
   private readonly _lattice: Lattice;
   private readonly _complete: boolean;
@@ -180,10 +180,10 @@ export class ShapeConstrainer<
     allowReflections = false,
     allowCopies = false
   ) {
-    this._ctx = context;
+    this.ctx = context;
     ShapeConstrainer._instanceIndex += 1;
 
-    this._solver = solver ?? (new this._ctx.context.Solver() as Core);
+    this._solver = solver ?? (new this.ctx.context.Solver() as Core);
     this._lattice = lattice;
     this._complete = complete;
     this._allowCopies = allowCopies;
@@ -219,7 +219,7 @@ export class ShapeConstrainer<
   private _createGrids() {
     this._shapeTypeGrid = new Map();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `scst-${ShapeConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -233,7 +233,7 @@ export class ShapeConstrainer<
 
     this._shapeInstanceGrid = new Map();
     for (const p of this._lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `scsi-${ShapeConstrainer._instanceIndex}-${p.y}-${p.x}`
       );
       if (this._complete) {
@@ -249,17 +249,17 @@ export class ShapeConstrainer<
     if (samplePayload) {
       this._shapePayloadGrid = new Map();
       let sort: AnySort<Name>;
-      if (this._ctx.context.isExpr(samplePayload)) {
+      if (this.ctx.context.isExpr(samplePayload)) {
         sort = samplePayload.sort;
       } else if (typeof samplePayload === 'number') {
-        sort = this._ctx.context.Int.sort();
+        sort = this.ctx.context.Int.sort();
       } else {
         throw new Error(
           `Could not determine z3 sort for ${samplePayload as string}`
         );
       }
       for (const p of this._lattice.points) {
-        const pv = this._ctx.context.Const(
+        const pv = this.ctx.context.Const(
           `scsp-${ShapeConstrainer._instanceIndex}-${p.y}-${p.x}`,
           sort
         );
@@ -281,12 +281,12 @@ export class ShapeConstrainer<
   private _addGridAgreementConstraints() {
     for (const [p, shapeType] of this._shapeTypeGrid) {
       this._solver.add(
-        this._ctx.context.Or(
-          this._ctx.context.And(
+        this.ctx.context.Or(
+          this.ctx.context.And(
             shapeType.eq(-1),
             this._shapeInstanceGrid.get(p)!.eq(-1)
           ),
-          this._ctx.context.And(
+          this.ctx.context.And(
             shapeType.neq(-1),
             this._shapeInstanceGrid.get(p)!.neq(-1)
           )
@@ -302,22 +302,22 @@ export class ShapeConstrainer<
       i < Math.max(this._lattice.points.length, this._variants.length);
       i++
     ) {
-      intVals[i] = this._ctx.context.Int.val(i);
+      intVals[i] = this.ctx.context.Int.val(i);
     }
 
-    const quadTree = new ExpressionQuadTree(this._ctx, this._lattice.points);
+    const quadTree = new ExpressionQuadTree(this.ctx, this._lattice.points);
     for (const instanceId of this._lattice.points.map(
       p => this._lattice.pointToIndex(p)!
     )) {
       quadTree.addExpr(`${ShapeExprKey.HAS_INSTANCE_ID}-${instanceId}`, p =>
-        this._ctx.context.Eq(
+        this.ctx.context.Eq(
           this._shapeInstanceGrid.get(p)!,
           intVals[instanceId]
         )
       );
       quadTree.addExpr(`${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`, p =>
-        this._ctx.context.Not(
-          this._ctx.context.Eq(
+        this.ctx.context.Not(
+          this.ctx.context.Eq(
             this._shapeInstanceGrid.get(p)!,
             intVals[instanceId]
           )
@@ -326,13 +326,11 @@ export class ShapeConstrainer<
     }
     for (let shapeIndex = 0; shapeIndex < this._variants.length; shapeIndex++) {
       quadTree.addExpr(`${ShapeExprKey.HAS_SHAPE_TYPE}-${shapeIndex}`, p =>
-        this._ctx.context.Eq(this._shapeTypeGrid.get(p)!, intVals[shapeIndex])
+        this.ctx.context.Eq(this._shapeTypeGrid.get(p)!, intVals[shapeIndex])
       );
     }
 
-    const rootOptions = new (createDefualtMap(PointMap))<Point, Bool<Name>[]>(
-      () => []
-    );
+    const rootOptions = new DefaultPointMap<Bool<Name>[]>(() => []);
     for (let shapeIndex = 0; shapeIndex < this._variants.length; shapeIndex++) {
       for (const variant of this._variants[shapeIndex]) {
         for (const rootPoint of this._lattice.points) {
@@ -372,7 +370,7 @@ export class ShapeConstrainer<
             if (otherPointsExpr) {
               andTerms.push(otherPointsExpr);
             }
-            rootOptions.get(rootPoint).push(this._ctx.context.And(...andTerms));
+            rootOptions.get(rootPoint)!.push(this.ctx.context.And(...andTerms));
           }
         }
       }
@@ -383,10 +381,10 @@ export class ShapeConstrainer<
         `${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`,
         []
       )!;
-      const orTerms = rootOptions.get(p);
+      const orTerms = rootOptions.get(p)!;
       if (orTerms.length > 0) {
         orTerms.push(notHasInstanceIdExpr);
-        this._solver.add(this._ctx.context.Or(...orTerms));
+        this._solver.add(this.ctx.context.Or(...orTerms));
       } else {
         this._solver.add(notHasInstanceIdExpr);
       }
@@ -402,9 +400,9 @@ export class ShapeConstrainer<
       sumTerms.push([shapeType.eq(shapeIndex), 1]);
     }
     addToSolver(
-      this._ctx,
+      this.ctx,
       this._solver,
-      PbEq(this._ctx, sumTerms, shape.offsetsWithPayloads.length)
+      PbEq(this.ctx, sumTerms, shape.offsetsWithPayloads.length)
     );
   }
 
@@ -525,9 +523,29 @@ export class ShapeConstrainer<
 export default function shapes<Name extends string>(
   context: GrilopsContext<Name>
 ): {
+  /**
+   * @param offsets A list of offsets that define the shape. An offset may be a
+   * `Vector`; or, to optionally associate a payload value with the offset, it
+   * may be a `[Vector, Payload]`. A payload may be any z3 expression.
+   */
   Shape: new <Payload extends Expr<Name>>(
     offsets: Offset<Name, Payload>[]
   ) => Shape<Name, Payload>;
+  /**
+   * @param lattice The structure of the grid.
+   * @param shapes A list of region shape definitions. The same region shape
+   * definition may be included multiple times to indicate the number of times
+   * that shape may appear (if allowCopies is false).
+   * @param solver A `Solver` object. If undefined, a `Solver` will be constructed.
+   * @param complete If true, every cell must be part of a shape region.
+   * Defaults to false.
+   * @param allowRotations If true, allow rotations of the shapes to be placed
+   * in the grid. Defaults to false.
+   * @param allowReflections If true, allow reflections of the shapes to be
+   * placed in the grid. Defaults to false.
+   * @param allowCopies If true, allow any number of copies of the shapes to
+   * be placed in the grid. Defaults to false.
+   */
   ShapeConstrainer: new <
     Payload extends Expr<Name>,
     const Core extends Solver<Name> | Optimize<Name> =
@@ -544,31 +562,11 @@ export default function shapes<Name extends string>(
   ) => ShapeConstrainer<Name, Payload, Core>;
 } {
   return {
-    /**
-     * @param offsets A list of offsets that define the shape. An offset may be a
-     * `Vector`; or, to optionally associate a payload value with the offset, it
-     * may be a `[Vector, Payload]`. A payload may be any z3 expression.
-     */
     Shape: function <Payload extends Expr<Name>>(
       offsets: Offset<Name, Payload>[]
     ) {
       return new Shape<Name, Payload>(context, offsets);
     },
-    /**
-     * @param lattice The structure of the grid.
-     * @param shapes A list of region shape definitions. The same region shape
-     * definition may be included multiple times to indicate the number of times
-     * that shape may appear (if allowCopies is false).
-     * @param solver A `Solver` object. If undefined, a `Solver` will be constructed.
-     * @param complete If true, every cell must be part of a shape region.
-     * Defaults to false.
-     * @param allowRotations If true, allow rotations of the shapes to be placed
-     * in the grid. Defaults to false.
-     * @param allowReflections If true, allow reflections of the shapes to be
-     * placed in the grid. Defaults to false.
-     * @param allowCopies If true, allow any number of copies of the shapes to
-     * be placed in the grid. Defaults to false.
-     */
     ShapeConstrainer: function <
       Payload extends Expr<Name>,
       const Core extends Solver<Name> | Optimize<Name> =

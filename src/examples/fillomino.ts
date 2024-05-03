@@ -1,5 +1,5 @@
 import { init } from 'z3-solver';
-import { grilops, zip } from '../lib';
+import { grilops, zip } from '../../lib';
 
 export default async function fillomino(updateText: (val: string) => void) {
   // initialize z3

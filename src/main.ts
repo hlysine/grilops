@@ -1,11 +1,18 @@
-// import fillomino from './fillomino';
+import fillomino from './examples/fillomino';
+import numberlink from './examples/numberlink';
 import test from './test';
+
+const examples = [
+  ['fillomino', fillomino],
+  ['numberlink', numberlink],
+  ['test', test],
+] as const;
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <div>
     <h1>GRILOPS</h1>
     <div class="card">
-      <button id="execute" type="button">Execute</button>
+      ${examples.map(([name]) => `<button id="${name}" type="button">${name}</button>`).join('')}
     </div>
     <pre id="result"></pre>
     <p>
@@ -18,10 +25,13 @@ const updateText = (text: string) => {
   document.querySelector<HTMLPreElement>('#result')!.textContent = text;
 };
 
-document
-  .querySelector<HTMLButtonElement>('#execute')!
-  .addEventListener('click', async () => {
-    console.log('Start solving');
-    // await fillomino(updateText);
-    await test(updateText);
-  });
+examples.forEach(([name, fn]) => {
+  document
+    .querySelector<HTMLButtonElement>('#' + name)!
+    .addEventListener('click', async () => {
+      console.log('Start solving');
+      console.time('Total time');
+      await fn(updateText);
+      console.timeEnd('Total time');
+    });
+});

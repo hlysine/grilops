@@ -37,7 +37,44 @@ export function* combinations<T>(choices: T[], length: number): Generator<T[]> {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-export function createDefualtMap(base: new <K, V>(...args: any) => Map<K, V>) {
+declare const KeyedMapContructorSymbol: unique symbol;
+
+export interface DefaultMap<K, V> extends Map<K, V> {
+  get(key: K): V;
+}
+
+export interface DefaultMapConstructor {
+  new <K, V>(
+    defaultFunc: () => V,
+    entries?: readonly (readonly [K, V])[] | null
+  ): DefaultMap<K, V>;
+  readonly prototype: DefaultMap<any, any>;
+}
+
+export interface KeyedMapConstructor<T> extends MapConstructor {
+  new (): Map<T, any>;
+  new <V>(entries?: readonly (readonly [T, V])[] | null): Map<T, V>;
+  readonly prototype: Map<T, any>;
+  readonly [KeyedMapContructorSymbol]?: undefined;
+}
+
+export interface DefaultKeyedMapConstructor<T>
+  extends DefaultMapConstructor,
+    KeyedMapConstructor<T> {
+  new <V>(
+    defaultFunc: () => V,
+    entries?: readonly (readonly [T, V])[] | null
+  ): DefaultMap<T, V>;
+  readonly prototype: DefaultMap<T, any>;
+}
+
+export function createDefualtMap<T>(
+  base: KeyedMapConstructor<T>
+): DefaultKeyedMapConstructor<T>;
+export function createDefualtMap(base: MapConstructor): DefaultMapConstructor;
+export function createDefualtMap(
+  base: new <K, V>(...args: any) => Map<K, V>
+): any {
   return class DefaultMap<K, V> extends base<K, V> {
     public default: () => V;
 
@@ -58,18 +95,12 @@ export function createDefualtMap(base: new <K, V>(...args: any) => Map<K, V>) {
   };
 }
 
-export interface KeyedMapConstructor<T> {
-  new (): Map<T, any>;
-  new <V>(entries?: readonly (readonly [T, V])[] | null): Map<T, V>;
-  readonly prototype: Map<T, any>;
-}
-
 export function createStringMap<T, Key extends string>(
   toString: (item: T) => Key,
   fromString: (key: Key) => T
 ): KeyedMapConstructor<T> {
-  return class StringMap extends Map<T, unknown> {
-    public get(key: T): unknown {
+  return class StringMap<V> extends Map<T, V> {
+    public get(key: T): V | undefined {
       return super.get(toString(key) as unknown as T);
     }
 
@@ -77,7 +108,7 @@ export function createStringMap<T, Key extends string>(
       return super.has(toString(key) as unknown as T);
     }
 
-    public set(key: T, value: unknown): this {
+    public set(key: T, value: V): this {
       return super.set(toString(key) as unknown as T, value);
     }
 
@@ -86,7 +117,7 @@ export function createStringMap<T, Key extends string>(
     }
 
     public forEach(
-      callbackfn: (value: unknown, key: T, map: Map<T, unknown>) => void,
+      callbackfn: (value: V, key: T, map: Map<T, V>) => void,
       thisArg?: any
     ): void {
       super.forEach(
@@ -96,7 +127,13 @@ export function createStringMap<T, Key extends string>(
       );
     }
 
-    constructor(entries?: Iterable<readonly [T, unknown]> | null) {
+    public *[Symbol.iterator](): IterableIterator<[T, V]> {
+      for (const [key, value] of super[Symbol.iterator]()) {
+        yield [fromString(key as unknown as Key), value] as const;
+      }
+    }
+
+    constructor(entries?: Iterable<readonly [T, V]> | null) {
       super(
         [...(entries ?? [])].map(([k, v]) => [toString(k) as unknown as T, v])
       );
@@ -139,6 +176,12 @@ export function createStringSet<T, Key extends string>(
           ),
         thisArg
       );
+    }
+
+    public *[Symbol.iterator](): IterableIterator<T> {
+      for (const key of super[Symbol.iterator]()) {
+        yield fromString(key as unknown as Key);
+      }
     }
 
     constructor(values?: readonly T[] | null) {

@@ -18,7 +18,7 @@ export class SymbolGrid<
 > {
   private static _instanceIndex = 0;
 
-  private readonly _ctx: GrilopsContext<Name>;
+  public readonly ctx: GrilopsContext<Name>;
   private _lattice: Lattice;
   private _symbolSet: SymbolSet;
   private _solver: Core;
@@ -36,13 +36,13 @@ export class SymbolGrid<
     symbolSet: SymbolSet,
     solver: Core | undefined = undefined
   ) {
-    this._ctx = context;
+    this.ctx = context;
     this._lattice = lattice;
     this._symbolSet = symbolSet;
-    this._solver = solver ?? (new this._ctx.context.Solver() as Core);
+    this._solver = solver ?? (new this.ctx.context.Solver() as Core);
     this._grid = new PointMap<Arith<Name>>();
     for (const p of lattice.points) {
-      const v = this._ctx.context.Int.const(
+      const v = this.ctx.context.Int.const(
         `sg_${SymbolGrid._instanceIndex}_${p.y}-${p.x}`
       );
       this._solver.add(v.ge(symbolSet.minIndex()), v.le(symbolSet.maxIndex()));
@@ -130,7 +130,7 @@ export class SymbolGrid<
    */
   public cellIsOneOf(p: Point, values: number[]) {
     const cell = this._grid.get(p)!;
-    return this._ctx.context.Or(...values.map(v => cell.eq(v)));
+    return this.ctx.context.Or(...values.map(v => cell.eq(v)));
   }
 
   /**
@@ -152,7 +152,7 @@ export class SymbolGrid<
     for (const cell of this._grid.values()) {
       orTerms.push(cell.neq(model.eval(cell)));
     }
-    this._solver.add(this._ctx.context.Or(...orTerms));
+    this._solver.add(this.ctx.context.Or(...orTerms));
     return (await this._solver.check()) === 'unsat';
   }
 
@@ -210,6 +210,9 @@ export class SymbolGrid<
 export default function grids<Name extends string>(
   context: GrilopsContext<Name>
 ): {
+  /**
+   * A grid of cells that can be solved to contain specific symbols.
+   */
   SymbolGrid: new <Core extends Solver<Name> | Optimize<Name> = Solver<Name>>(
     lattice: Lattice,
     symbolSet: SymbolSet,
@@ -217,9 +220,6 @@ export default function grids<Name extends string>(
   ) => SymbolGrid<Name, Core>;
 } {
   return {
-    /**
-     * A grid of cells that can be solved to contain specific symbols.
-     */
     SymbolGrid: function <
       Core extends Solver<Name> | Optimize<Name> = Solver<Name>,
     >(

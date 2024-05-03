@@ -370,7 +370,7 @@ export class ShapeConstrainer<
             if (otherPointsExpr) {
               andTerms.push(otherPointsExpr);
             }
-            rootOptions.get(rootPoint)!.push(this.ctx.context.And(...andTerms));
+            rootOptions.get(rootPoint).push(this.ctx.context.And(...andTerms));
           }
         }
       }
@@ -381,7 +381,7 @@ export class ShapeConstrainer<
         `${ShapeExprKey.NOT_HAS_INSTANCE_ID}-${instanceId}`,
         []
       )!;
-      const orTerms = rootOptions.get(p)!;
+      const orTerms = rootOptions.get(p);
       if (orTerms.length > 0) {
         orTerms.push(notHasInstanceIdExpr);
         this._solver.add(this.ctx.context.Or(...orTerms));

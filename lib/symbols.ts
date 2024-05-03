@@ -57,7 +57,7 @@ export class SymbolSet {
 
   /**
    * @param symbols A list of specifications for the symbols. Each specification
-   * may be a code-safe name, a (Python-safe name, printable label) tuple, or
+   * may be a code-safe name, a (code-safe name, printable label) tuple, or
    * a (code-safe name, printable label, index value) tuple.
    */
   public constructor(

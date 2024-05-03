@@ -1,7 +1,7 @@
 import { init } from 'z3-solver';
 import { grilops } from '../lib';
 
-export default async function test(updateText: (val: string) => void) {
+export default async function testShape(updateText: (val: string) => void) {
   // initialize z3
   const { Z3, Context } = await init();
   const ctx = Context('main');
@@ -11,10 +11,6 @@ export default async function test(updateText: (val: string) => void) {
     SymbolSet,
     getRectangleLattice,
     SymbolGrid,
-    Point,
-    countCells,
-    RectangularLattice,
-    RegionConstrainer,
     ShapeConstrainer,
     Shape,
     Vector,
@@ -38,20 +34,6 @@ export default async function test(updateText: (val: string) => void) {
   const grid = new SymbolGrid(lattice, symbolSet, new ctx.Solver('QF_FD'));
 
   // DEMO CONSTRAINTS
-
-  // add some sightline constraints
-  for (let i = 0; i < 8; i++) {
-    const cell = grid.cellAt(new Point(i, 0));
-    grid.solver.add(cell.neq(symbolSet.indices.EMPTY));
-    const count = countCells(
-      grid,
-      new Point(i, 0),
-      RectangularLattice.EDGE_DIRECTIONS.E,
-      c => ctx.If(c.eq(cell), ctx.Int.val(1), ctx.Int.val(0)),
-      c => c.neq(cell)
-    );
-    grid.solver.add(count.eq(ctx.Int.val(i + 1)));
-  }
 
   // add some shape constraints
   const sc = new ShapeConstrainer(
@@ -78,30 +60,6 @@ export default async function test(updateText: (val: string) => void) {
         .implies(sc.getShapeTypeAt(p).eq(-1))
     )
   );
-
-  // add some region constraints
-  const rc = new RegionConstrainer(lattice, grid.solver);
-  grid.solver.add(rc.regionSizeGrid.get(new Point(0, 0))!.eq(1));
-  for (const p of lattice.points) {
-    for (const np of lattice.edgeSharingNeighbors(grid.grid, p)) {
-      grid.solver.add(
-        grid
-          .cellAt(p)
-          .eq(grid.cellAt(np.location))
-          .eq(rc.regionIdGrid.get(p)!.eq(rc.regionIdGrid.get(np.location)!))
-      );
-    }
-  }
-
-  // optimize for the fewest number of filled cells
-  // grid.solver.minimize(
-  //   ctx.Sum(
-  //     ctx.Int.val(0),
-  //     ...[...grid.grid.values()].map(c =>
-  //       ctx.If(c.eq(symbolSet.indices.EMPTY), ctx.Int.val(0), ctx.Int.val(1))
-  //     )
-  //   )
-  // );
 
   // run the solver by calling the solve method
   // the solution can be found in grid.solver.model if it exists

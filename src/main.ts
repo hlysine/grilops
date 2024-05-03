@@ -1,11 +1,17 @@
 import fillomino from './examples/fillomino';
 import numberlink from './examples/numberlink';
-import test from './test';
+import testPaths from './testPaths';
+import testRegion from './testRegion';
+import testShape from './testShape';
+import testSightline from './testSightline';
 
 const examples = [
   ['fillomino', fillomino],
   ['numberlink', numberlink],
-  ['test', test],
+  ['testSightline', testSightline],
+  ['testShape', testShape],
+  ['testRegion', testRegion],
+  ['testPath', testPaths],
 ] as const;
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `

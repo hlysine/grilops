@@ -1,6 +1,6 @@
 {
   "name": "grilops",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "dist/index.es.js",
   "module": "dist/index.es.js",
   "exports": {
@@ -9,13 +9,9 @@
       "require": "./dist/index.cjs.js"
     }
   },
-  "engines": {
-    "bun": ">=1.1.4"
-  },
   "files": [
     "dist"
   ],
-  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "tsc --p ./tsconfig.build.json && vite build",

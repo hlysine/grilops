@@ -32,6 +32,21 @@ const { /* grilops exports */ } = grilops({
 });
 ```
 
+## Progress
+
+The following modules have been ported from Python:
+- `geometry`
+- `grids`
+- `symbols`
+- `quadTree`
+- `sightlines`
+- `shapes`
+- `regions`
+- `paths` (**buggy**)
+
+The follow modules are mising
+- `loops`
+
 ## Development
 
 [Bun >=v1.1.0](https://bun.sh/) is required for this project.

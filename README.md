@@ -1,5 +1,7 @@
 # grilops
 
+![NPM Version](https://img.shields.io/npm/v/grilops)
+
 > This is a WIP port of [obijywk/grilops](https://github.com/obijywk/grilops) to TypeScript.
 
 A **Gri**d **Lo**gic **P**uzzle **S**olver library, using Typescript and [z3](https://github.com/Z3Prover/z3).

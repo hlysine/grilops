@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "main": "dist/index.es.js",
   "module": "dist/index.es.js",
+  "description": "A Grid Logic Puzzle Solver library, using Typescript and z3.",
+  "keywords": [
+    "puzzle",
+    "solver",
+    "logic",
+    "z3",
+    "typescript",
+    "sat"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.es.js",
